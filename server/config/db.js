@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Cria uma única instância do Pool com as credenciais do arquivo .env
+// Cria uma Ãºnica instÃ¢ncia do Pool
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
@@ -10,7 +10,8 @@ const pool = new Pool({
   port: process.env.DB_PORT,
 });
 
-// Exporta um método 'query' que usa nosso pool de conexão
+// Exporta um objeto com o mÃ©todo 'query' e o 'pool'
 module.exports = {
   query: (text, params) => pool.query(text, params),
+  pool: pool // <<< NOVA LINHA: exporta a instÃ¢ncia do pool
 };

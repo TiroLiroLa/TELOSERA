@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom'; // Hook para pegar o ID da URL
 import axios from 'axios';
 import './AnuncioDetalhe.css'; // Vamos criar este CSS
+import { Link } from 'react-router-dom'; // Adicionar Link
 
 const AnuncioDetalhe = () => {
   const { id } = useParams(); // Pega o ':id' da rota /anuncio/:id
@@ -64,7 +65,9 @@ const AnuncioDetalhe = () => {
           <h4>Contato</h4>
           <p><strong>Email:</strong> {anuncio.email_usuario}</p>
           <p><strong>Telefone:</strong> {anuncio.telefone_usuario || 'Não informado'}</p>
-          <button className="profile-button">Acessar Perfil</button>
+          <Link to={`/perfil/${anuncio.id_usuario}`}>
+            <button className="profile-button">Acessar Perfil</button>
+          </Link>
         </div>
         <div className="info-box">
           <h3>Avaliação</h3>

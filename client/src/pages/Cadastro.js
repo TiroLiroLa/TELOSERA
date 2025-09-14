@@ -1,148 +1,96 @@
-// client/src/pages/Cadastro.js
-
 import React, { useState } from 'react';
 import axios from 'axios';
+import LocationPicker from '../components/LocationPicker';
 
-// Componente funcional para a página de cadastro
 const Cadastro = () => {
-  // O hook useState gerencia o estado do formulário.
-  // 'formData' é um objeto que guarda todos os valores dos campos.
-  // 'setFormData' � a fun��o que usamos para atualizar esses valores.
   const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: '',
-    cpf: '',
-    tipo_usuario: 'P', // 'P' para Prestador, 'E' para Empresa
+    nome: '', email: '', senha: '', confirmarSenha: '', cpf: '',
+    tipo_usuario: 'P', telefone: '', rua: '', numero: '',
+    complemento: '', cidade: '', estado: '', cep: '',
+    raio_atuacao: '', // <<< Adicionado ao estado principal
   });
+  
+  // Estado separado para a localização (latitude e longitude)
+  const [location, setLocation] = useState(null);
 
-  // Desestruturando as vari�veis do estado para facilitar o uso no JSX
-  const { nome, email, senha, confirmarSenha, cpf, tipo_usuario } = formData;
-
-  // Fun��o 'onChange' que � chamada toda vez que o usu�rio digita em um campo.
-  // Ela atualiza o estado 'formData' com o novo valor.
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // Fun��o 'onSubmit' que � chamada quando o formul�rio � enviado.
-  const onSubmit = async e => {
-    e.preventDefault(); // Impede o recarregamento da p�gina
+  const onLocationSelect = (latlng) => {
+    setLocation(latlng);
+    console.log("Localização selecionada:", latlng);
+    // Futuramente, poderíamos usar uma API de geocodificação reversa
+    // para preencher os campos de endereço automaticamente.
+  };
 
-    // Valida��o simples para verificar se as senhas coincidem
-    if (senha !== confirmarSenha) {
+  const onSubmit = async e => {
+    e.preventDefault();
+    if (formData.senha !== formData.confirmarSenha) {
       alert('As senhas não coincidem!');
       return;
     }
+    // Preparar os dados para envio
+    const dadosParaEnviar = {
+        ...formData,
+        localizacao: location // Adiciona o objeto de localização aos dados
+    };
 
     try {
-      // Cria o objeto com os dados a serem enviados para a API
-      const novoUsuario = {
-        nome,
-        email,
-        senha,
-        cpf,
-        tipo_usuario,
-      };
-
-      // Configura��o para a requisi��o POST
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
-      // Converte o objeto JavaScript para uma string JSON
-      const body = JSON.stringify(novoUsuario);
-
-      // Faz a requisi��o POST para a nossa API backend
-      // A URL completa � http://localhost:3001/api/users/register
-      const res = await axios.post('/api/users/register', body, config);
-
-      console.log(res.data); // Exibe a resposta da API no console
+      // Envia o objeto completo
+      const res = await axios.post('/api/users/register', dadosParaEnviar);
       alert('Cadastro realizado com sucesso!');
-      // Aqui voc� poderia redirecionar o usu�rio para a p�gina de login
-
+      
     } catch (err) {
-      console.error(err.response.data);
-      alert(`Erro no cadastro: ${err.response.data.msg}`);
+      alert(`Erro no cadastro: ${err.response ? err.response.data.msg : err.message}`);
     }
   };
 
-  // JSX: A estrutura HTML do nosso componente
   return (
-    <div className="container">
+    <div className="container" style={{maxWidth: '700px', margin: 'auto'}}>
       <h1>Cadastre-se</h1>
-      <p>Crie sua conta no TELOSERA</p>
       <form onSubmit={onSubmit}>
-        <div>
-          <input
-            type="text"
-            placeholder="Nome Completo"
-            name="nome"
-            value={nome}
-            onChange={onChange}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="email"
-            placeholder="Endereço de E-mail"
-            name="email"
-            value={email}
-            onChange={onChange}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Senha"
-            name="senha"
-            value={senha}
-            onChange={onChange}
-            minLength="6"
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Confirme a Senha"
-            name="confirmarSenha"
-            value={confirmarSenha}
-            onChange={onChange}
-            minLength="6"
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            placeholder="CPF"
-            name="cpf"
-            value={cpf}
-            onChange={onChange}
-            required
-          />
-        </div>
+        {/* ... campos existentes: nome, email, senha, cpf ... */}
+        {/* (Vou omitir o JSX repetido por brevidade, mas eles devem estar aqui) */}
+        <input type="text" placeholder="Nome" name="nome" value={formData.nome} onChange={onChange} required />
+        <input type="email" placeholder="Email" name="email" value={formData.email} onChange={onChange} required />
+        <input type="password" placeholder="Senha" name="senha" value={formData.senha} onChange={onChange} required />
+        <input type="password" placeholder="Confirmar Senha" name="confirmarSenha" value={formData.confirmarSenha} onChange={onChange} required />
+        <input type="text" placeholder="CPF" name="cpf" value={formData.cpf} onChange={onChange} required />
+        <input type="tel" placeholder="Telefone (opcional)" name="telefone" value={formData.telefone} onChange={onChange} />
+        
+        <h3>Endereço</h3>
+        <input type="text" placeholder="Rua" name="rua" value={formData.rua} onChange={onChange} />
+        <input type="text" placeholder="Número" name="numero" value={formData.numero} onChange={onChange} />
+        <input type="text" placeholder="Complemento" name="complemento" value={formData.complemento} onChange={onChange} />
+        <input type="text" placeholder="Cidade" name="cidade" value={formData.cidade} onChange={onChange} />
+        <input type="text" placeholder="Estado (UF)" name="estado" value={formData.estado} onChange={onChange} maxLength="2" />
+        <input type="text" placeholder="CEP" name="cep" value={formData.cep} onChange={onChange} />
+
         <div>
           <p>Tipo de Conta:</p>
-          <input
-            type="radio"
-            name="tipo_usuario"
-            value="P"
-            checked={tipo_usuario === 'P'}
-            onChange={onChange}
-          /> Prestador de Serviço
-          <input
-            type="radio"
-            name="tipo_usuario"
-            value="E"
-            checked={tipo_usuario === 'E'}
-            onChange={onChange}
-          /> Empresa
+          <label>
+            <input type="radio" name="tipo_usuario" value="P" checked={formData.tipo_usuario === 'P'} onChange={onChange} /> Prestador
+          </label>
+          <label>
+            <input type="radio" name="tipo_usuario" value="E" checked={formData.tipo_usuario === 'E'} onChange={onChange} /> Empresa
+          </label>
         </div>
+
+        {/* Seção que só aparece para Prestadores */}
+        <div className="prestador-section">
+          <h3>Região de Atuação</h3>
+          <LocationPicker onLocationSelect={onLocationSelect} />
+          <label>
+            Raio de Atuação (em km):
+            <input 
+              type="number" 
+              placeholder="Ex: 50" 
+              name="raio_atuacao" 
+              value={formData.raio_atuacao}
+              onChange={onChange}
+            />
+          </label>
+        </div>
+
         <input type="submit" value="Registrar" />
       </form>
     </div>

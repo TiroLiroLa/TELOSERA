@@ -10,6 +10,8 @@ import AnuncioForm from './components/AnuncioForm'; // Importe o novo formul�r
 import './components/Dashboard.css'; // <<< IMPORTA O NOVO CSS
 import Home from './pages/Home'; // <<< IMPORTA A NOVA P�GINA HOME
 import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
+import Perfil from './pages/Perfil';
+import EditarPerfil from './pages/EditarPerfil';
 
 // Componente para o Painel de Controle (Dashboard)
 const Dashboard = () => {
@@ -56,6 +58,7 @@ const Dashboard = () => {
             <div className="dashboard-header">
                 <h1>Painel de Controle</h1>
                 <span>Olá, {user?.nome}!</span>
+                <Link to="/perfil/editar"><button>Editar Perfil</button></Link>
                 <button onClick={logout}>Sair</button>
             </div>
             
@@ -117,6 +120,8 @@ const AppContent = () => {
             <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
             <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+            <Route path="/perfil/:id" element={<Perfil />} /> {/* <<< NOVA ROTA */}
+            <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
             {/* Rota de fallback, se nenhuma outra corresponder */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
