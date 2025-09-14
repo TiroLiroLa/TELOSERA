@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import LocationPicker from '../components/LocationPicker';
+import Modal from '../components/Modal'; // <<< Importar Modal
 
 const Cadastro = () => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const Cadastro = () => {
   
   // Estado separado para a localização (latitude e longitude)
   const [location, setLocation] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false); // <<< Estado para o modal
 
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -22,25 +24,27 @@ const Cadastro = () => {
     // para preencher os campos de endereço automaticamente.
   };
 
+  const handleConfirmLocation = () => {
+    if (!location) {
+      alert("Por favor, clique no mapa para selecionar sua localização.");
+      return;
+    }
+    setIsModalOpen(false); // Fecha o modal e mantém a localização salva
+  };
+
   const onSubmit = async e => {
     e.preventDefault();
     if (formData.senha !== formData.confirmarSenha) {
-      alert('As senhas não coincidem!');
-      return;
+      return alert('As senhas não coincidem!');
     }
-    // Preparar os dados para envio
-    const dadosParaEnviar = {
-        ...formData,
-        localizacao: location // Adiciona o objeto de localização aos dados
-    };
+    
+    const dadosParaEnviar = { ...formData, localizacao: location };
 
     try {
-      // Envia o objeto completo
-      const res = await axios.post('/api/users/register', dadosParaEnviar);
+      await axios.post('/api/users/register', dadosParaEnviar);
       alert('Cadastro realizado com sucesso!');
-      
     } catch (err) {
-      alert(`Erro no cadastro: ${err.response ? err.response.data.msg : err.message}`);
+      alert(`Erro no cadastro: ${err.response?.data?.msg || err.message}`);
     }
   };
 
@@ -75,24 +79,44 @@ const Cadastro = () => {
           </label>
         </div>
 
-        {/* Seção que só aparece para Prestadores */}
-        <div className="prestador-section">
-          <h3>Região de Atuação</h3>
-          <LocationPicker onLocationSelect={onLocationSelect} />
+        <div className="regiao-section">
+          <h3>Sua Localização Base de Atuação</h3>
+          {/* Mostra a localização selecionada ou um prompt para o usuário */}
+          {location ? (
+            <p>Localização definida: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
+          ) : (
+            <p>Nenhuma localização selecionada.</p>
+          )}
+          <button type="button" onClick={() => setIsModalOpen(true)}>
+            Definir Localização e Raio
+          </button>
+        </div>
+
+        <input type="submit" value="Registrar" />
+      </form>
+
+      {/* Modal para o mapa no cadastro */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <h2>Defina sua Localização e Raio</h2>
+          <LocationPicker 
+            onLocationSelect={onLocationSelect} 
+            initialPosition={location}
+            radiusKm={formData.raio_atuacao}
+          />
           <label>
             Raio de Atuação (em km):
             <input 
               type="number" 
               placeholder="Ex: 50" 
-              name="raio_atuacao" 
+              name="raio_atuacao"
               value={formData.raio_atuacao}
               onChange={onChange}
             />
           </label>
-        </div>
-
-        <input type="submit" value="Registrar" />
-      </form>
+          <button type="button" onClick={handleConfirmLocation} style={{marginTop: '1rem'}}>
+            Confirmar Localização
+          </button>
+      </Modal>
     </div>
   );
 };

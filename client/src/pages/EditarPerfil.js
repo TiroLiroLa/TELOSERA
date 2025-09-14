@@ -137,11 +137,15 @@ const EditarPerfil = () => {
         </button>
       </div>
 
-      {/* <<< 5. O Modal em si */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <h2>Selecione sua nova região de atuação</h2>
         <form onSubmit={onRegiaoSubmit}>
-            <LocationPicker onLocationSelect={onLocationSelect} />
+            {/* <<< PASSA O RAIO ATUAL PARA O LOCATIONPICKER */}
+            <LocationPicker 
+              onLocationSelect={onLocationSelect}
+              initialPosition={newLocation}
+              radiusKm={newRaio} 
+            />
             <label>
                 Novo Raio de Atuação (em km):
                 <input
@@ -158,6 +162,5 @@ const EditarPerfil = () => {
     </div>
   );
 };
-
 
 export default EditarPerfil;
