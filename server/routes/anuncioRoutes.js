@@ -3,6 +3,22 @@ const router = express.Router();
 const auth = require('../middleware/auth'); // Nosso middleware de autentica��o
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 
+// @route   GET api/anuncios/meus
+// @desc    Buscar todos os an�ncios do usu�rio logado
+// @access  Privado
+router.get('/meus', auth, async (req, res) => {
+    try {
+        const anuncios = await db.query( // <<< USA db.query
+            "SELECT * FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC",
+            [req.user.id]
+        );
+        res.json(anuncios.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
 // @route   GET api/anuncios/:id
 // @desc    Buscar os detalhes de um �nico an�ncio
 // @access  P�blico
@@ -63,45 +79,39 @@ router.get('/', async (req, res) => {
 });
 
 // @route   POST api/anuncios
-// @desc    Criar um novo an�ncio
+// @desc    Criar um novo anúncio (Versão Aprimorada com Localização)
 // @access  Privado
 router.post('/', auth, async (req, res) => {
-  // O middleware 'auth' nos d� acesso a req.user.id
   const idUsuario = req.user.id;
-  const { titulo, descricao, tipo, fk_Area_id_area, fk_id_servico } = req.body;
+  // <<< 1. Recebendo a localização do frontend
+  const { 
+    titulo, descricao, tipo, 
+    fk_Area_id_area, fk_id_servico, localizacao 
+  } = req.body;
 
-  // Valida��o
-  if (!titulo || !descricao || !tipo) {
-    return res.status(400).json({ msg: 'Por favor, preencha os campos obrigatórios.' });
+  if (!titulo || !descricao || !tipo || !fk_Area_id_area || !fk_id_servico) {
+    return res.status(400).json({ msg: 'Por favor, preencha todos os campos obrigatórios.' });
   }
 
   try {
-        const novoAnuncio = await db.query( // <<< USA db.query
-            `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, status) 
-             VALUES ($1, $2, $3, $4, $5, $6, true) RETURNING *`,
-            [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico]
-        );
-        res.status(201).json(novoAnuncio.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Erro no servidor');
+    // <<< 2. Prepara o ponto para o PostGIS
+    let point = null;
+    if (localizacao) {
+      point = `POINT(${localizacao.lng} ${localizacao.lat})`;
     }
-});
 
-// @route   GET api/anuncios/meus
-// @desc    Buscar todos os an�ncios do usu�rio logado
-// @access  Privado
-router.get('/meus', auth, async (req, res) => {
-    try {
-        const anuncios = await db.query( // <<< USA db.query
-            "SELECT * FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC",
-            [req.user.id]
-        );
-        res.json(anuncios.rows);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Erro no servidor');
-    }
+    const novoAnuncio = await db.query(
+      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), true) 
+       RETURNING *`,
+      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point]
+    );
+
+    res.status(201).json(novoAnuncio.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erro no servidor');
+  }
 });
 
 // @route   DELETE api/anuncios/:id

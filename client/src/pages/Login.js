@@ -1,5 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { Link } from 'react-router-dom'; // Adicionar Link
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' });
@@ -32,6 +33,10 @@ const Login = () => {
         </div>
         <input type="submit" value="Login" />
       </form>
+      <div></div>
+      <Link to={`/cadastro`}>
+        <p>Não possui conta?</p>
+      </Link>
     </div>
   );
 };

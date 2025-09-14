@@ -52,8 +52,6 @@ const Cadastro = () => {
     <div className="container" style={{maxWidth: '700px', margin: 'auto'}}>
       <h1>Cadastre-se</h1>
       <form onSubmit={onSubmit}>
-        {/* ... campos existentes: nome, email, senha, cpf ... */}
-        {/* (Vou omitir o JSX repetido por brevidade, mas eles devem estar aqui) */}
         <input type="text" placeholder="Nome" name="nome" value={formData.nome} onChange={onChange} required />
         <input type="email" placeholder="Email" name="email" value={formData.email} onChange={onChange} required />
         <input type="password" placeholder="Senha" name="senha" value={formData.senha} onChange={onChange} required />

@@ -41,3 +41,7 @@
     font-size: 0.9rem;
     color: #666;
 }
+
+.card-link {
+  text-decoration: none;
+}

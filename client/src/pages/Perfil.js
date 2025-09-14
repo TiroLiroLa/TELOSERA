@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import StaticMap from '../components/StaticMap'; // <<< 1. Importar o novo componente
+import '../components/Styles.css'; // Importe seu arquivo CSS
 
 const Perfil = () => {
   const { id } = useParams(); // Pega o ID da URL
@@ -54,7 +55,7 @@ const Perfil = () => {
         </div>
       )}
       {/* Aqui viriam outras seções, como anúncios do usuário, avaliações, etc. */}
-      <Link to="/">Voltar para a página inicial</Link>
+      <Link to="/" className="link-sem-sublinhado">Voltar para a página inicial </Link>
     </div>
   );
 };

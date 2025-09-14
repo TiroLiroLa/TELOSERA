@@ -6,12 +6,13 @@ import Login from './pages/Login';
 import './App.css';
 import { useEffect, useState } from 'react'; // Importe useState e useEffect
 import axios from 'axios'; // Importe axios
-import AnuncioForm from './components/AnuncioForm'; // Importe o novo formul�rio
 import './components/Dashboard.css'; // <<< IMPORTA O NOVO CSS
+import './components/Styles.css'; // <<< IMPORTA O NOVO CSS
 import Home from './pages/Home'; // <<< IMPORTA A NOVA P�GINA HOME
 import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
 import Perfil from './pages/Perfil';
 import EditarPerfil from './pages/EditarPerfil';
+import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
 
 // Componente para o Painel de Controle (Dashboard)
 const Dashboard = () => {
@@ -33,11 +34,6 @@ const Dashboard = () => {
         fetchMeusAnuncios();
     }, []);
 
-    // Fun��o para adicionar o novo an�ncio � lista sem precisar recarregar a p�gina
-    const handleAnuncioCriado = (novoAnuncio) => {
-        setMeusAnuncios([novoAnuncio, ...meusAnuncios]);
-    };
-
     // Fun��o para deletar um an�ncio
     const handleDelete = async (idAnuncio) => {
         if (window.confirm('Tem certeza que deseja deletar este anúncio?')) {
@@ -56,24 +52,23 @@ const Dashboard = () => {
     return (
         <div className="dashboard-container">
             <div className="dashboard-header">
-                <h1>Painel de Controle</h1>
-                <span>Olá, {user?.nome}!</span>
+                <h1>Meu Painel</h1>
                 <Link to="/perfil/editar"><button>Editar Perfil</button></Link>
                 <button onClick={logout}>Sair</button>
             </div>
-            
-            <AnuncioForm onAnuncioCriado={handleAnuncioCriado} />
-            
+
             <div className="anuncios-section">
                 <h2>Meus Anúncios Publicados</h2>
                 {meusAnuncios.length > 0 ? (
                     <ul className="anuncios-lista">
                         {meusAnuncios.map(anuncio => (
-                            <li key={anuncio.id_anuncio} className="anuncio-item">
-                                <h3>{anuncio.titulo}</h3>
-                                <p>{anuncio.descricao}</p>
-                                <button onClick={() => handleDelete(anuncio.id_anuncio)}>Deletar</button>
-                            </li>
+                            <Link to={`/anuncio/${anuncio.id_anuncio}`} className='link-sem-sublinhado'>
+                                <li key={anuncio.id_anuncio} className="anuncio-item">
+                                    <h3>{anuncio.titulo}</h3>
+                                    <p>{anuncio.descricao}</p>
+                                    <button onClick={() => handleDelete(anuncio.id_anuncio)}>Deletar</button>
+                                </li>
+                            </Link>
                         ))}
                     </ul>
                 ) : (
@@ -85,50 +80,52 @@ const Dashboard = () => {
 };
 
 const AppContent = () => {
-  const { isAuthenticated, loading } = useContext(AuthContext);
+    const { isAuthenticated, loading } = useContext(AuthContext);
 
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
+    if (loading) {
+        return <div>Carregando...</div>;
+    }
+    
+    return (
+        <Router>
+            <div className="App">
+                <header className="main-header">
+                    <Link to="/" className="logo">TELOSERA</Link>
+                    <nav>
+                        {/* 1. Link agora está fora da verificação de 'isAuthenticated' */}
+                        <Link to="/anuncios/criar">Publicar Anúncio</Link>
 
-  return (
-    <Router>
-      <div className="App">
-        {/* Barra de Navega��o Gen�rica - Poderia ser um componente separado */}
-        <header className="main-header">
-            <Link to="/" className="logo">TELOSERA</Link>
-            <nav>
-                {isAuthenticated ? (
-                    <>
-                        <Link to="/dashboard">Meu Painel</Link>
-                        {/* O bot�o de Sair agora est� s� no dashboard, mas poderia estar aqui */}
-                    </>
-                ) : (
-                    <>
-                        <Link to="/login">Login</Link>
-                        <Link to="/cadastro">Cadastre-se</Link>
-                    </>
-                )}
-            </nav>
-        </header>
-
-        {/* Conte�do da p�gina */}
-        <main>
-          <Routes>
-            <Route path="/" element={<Home />} /> {/* <<< ROTA DA P�GINA INICIAL */}
-            <Route path="/anuncio/:id" element={<AnuncioDetalhe />} /> {/* <<< NOVA ROTA DIN�MICA */}
-            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
-            <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
-            <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-            <Route path="/perfil/:id" element={<Perfil />} /> {/* <<< NOVA ROTA */}
-            <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
-            {/* Rota de fallback, se nenhuma outra corresponder */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
-    </Router>
-  );
+                        {isAuthenticated ? (
+                            <>
+                                {/* O link "Publicar Anúncio" foi removido daqui */}
+                                <Link to="/dashboard">Meu Painel</Link>
+                            </>
+                        ) : (
+                            <>
+                                <Link to="/login">Login</Link>
+                                <Link to="/cadastro">Cadastre-se</Link>
+                            </>
+                        )}
+                    </nav>
+                </header>
+                <main>
+                    {/* A lógica de proteção de rotas aqui dentro permanece a mesma.
+                        Ela é a responsável por redirecionar o usuário. */}
+                    <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
+                        <Route path="/anuncios/criar" element={isAuthenticated ? <CriarAnuncio /> : <Navigate to="/login" />} />
+                        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
+                        <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
+                        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+                        <Route path="/perfil/:id" element={<Perfil />} />
+                        <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
+                        <Route path="*" element={<Navigate to="/" />} />
+                    </Routes>
+                </main>
+            </div>
+        </Router>
+    );
 };
 
 // Componente principal que usa o Provedor
