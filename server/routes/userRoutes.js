@@ -4,29 +4,18 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
-const { Pool } = require('pg');
+const db = require('../config/db'); // <<< IMPORTA A CONEXÃO CENTRALIZADA
 const auth = require('../middleware/auth'); // Importe o middleware de autenticação
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
-
-// Rota GET para buscar dados do usuário logado (ROTA PROTEGIDA)
+// Rota GET /me (protegida)
 router.get('/me', auth, async (req, res) => {
   try {
-    // O middleware 'auth' já validou o token e adicionou o ID do usuário em req.user.id
-    const user = await pool.query('SELECT id_usuario, nome, email, tipo_usuario FROM Usuario WHERE id_usuario = $1', [
+    const user = await db.query('SELECT id_usuario, nome, email, tipo_usuario FROM Usuario WHERE id_usuario = $1', [
       req.user.id,
     ]);
-
     if(user.rows.length === 0) {
         return res.status(404).json({ msg: 'Usuário não encontrado.'})
     }
-
     res.json(user.rows[0]);
   } catch (err) {
     console.error(err.message);
@@ -43,7 +32,7 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const userExists = await pool.query('SELECT * FROM Usuario WHERE email = $1 OR cpf = $2', [email, cpf]);
+    const userExists = await db.query('SELECT * FROM Usuario WHERE email = $1 OR cpf = $2', [email, cpf]); // <<< USA db.query
 
     if (userExists.rows.length > 0) {
       return res.status(400).json({ msg: 'Usuário com este e-mail ou CPF já existe.' });
@@ -54,23 +43,14 @@ router.post('/register', async (req, res) => {
     // e o TRIGGER 'trigger_hash_senha' que você criou fará a criptografia.
     // Esta é a maneira correta de fazer, dado o seu script SQL.
 
-    const newUser = await pool.query(
+    const newUser = await db.query( // <<< USA db.query
       'INSERT INTO Usuario (nome, email, senha, tipo_usuario, cpf, ativo) VALUES ($1, $2, $3, $4, $5, true) RETURNING id_usuario, nome, email',
       [nome, email, senha, tipo_usuario, cpf]
     );
-
-    res.status(201).json({
-      msg: 'Usuário cadastrado com sucesso!',
-      user: newUser.rows[0],
-    });
-
+    res.status(201).json({ msg: 'Usuário cadastrado com sucesso!', user: newUser.rows[0] });
   } catch (err) {
-    // --- MUDANÇA IMPORTANTE AQUI ---
-    // Logamos o erro COMPLETO no console do backend para podermos ver os detalhes.
-    console.error('ERRO AO REGISTRAR USUÁRIO:', err); 
-
-    // E enviamos uma resposta de erro mais genérica, mas ainda útil, para o frontend.
-    res.status(500).json({ msg: 'Erro interno do servidor. Verifique o console do backend.' });
+    console.error(err.message);
+    res.status(500).send('Erro no servidor');
   }
 });
 
@@ -84,8 +64,7 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // 1. Encontrar o usuário pelo e-mail
-    const userResult = await pool.query('SELECT * FROM Usuario WHERE email = $1', [email]);
+    const userResult = await db.query('SELECT * FROM Usuario WHERE email = $1', [email]); // <<< USA db.query
 
     if (userResult.rows.length === 0) {
       // Usuário não encontrado
