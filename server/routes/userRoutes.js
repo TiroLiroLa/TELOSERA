@@ -4,8 +4,8 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
-const db = require('../config/db'); // <<< IMPORTA A CONEXÃO CENTRALIZADA
-const auth = require('../middleware/auth'); // Importe o middleware de autenticação
+const db = require('../config/db'); // <<< IMPORTA A CONEXï¿½O CENTRALIZADA
+const auth = require('../middleware/auth'); // Importe o middleware de autenticaï¿½ï¿½o
 
 // Rota GET /me (protegida)
 router.get('/me', auth, async (req, res) => {
@@ -14,7 +14,7 @@ router.get('/me', auth, async (req, res) => {
       req.user.id,
     ]);
     if(user.rows.length === 0) {
-        return res.status(404).json({ msg: 'Usuário não encontrado.'})
+        return res.status(404).json({ msg: 'UsuÃ¡rio nÃ£o encontrado.'})
     }
     res.json(user.rows[0]);
   } catch (err) {
@@ -23,63 +23,63 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-// Rota POST para registrar um novo usuário
+// Rota POST para registrar um novo usuï¿½rio
 router.post('/register', async (req, res) => {
   const { nome, email, senha, tipo_usuario, cpf } = req.body;
 
   if (!nome || !email || !senha || !tipo_usuario || !cpf) {
-    return res.status(400).json({ msg: 'Por favor, insira todos os campos obrigatórios.' });
+    return res.status(400).json({ msg: 'Por favor, insira todos os campos obrigatÃ³rios.' });
   }
 
   try {
     const userExists = await db.query('SELECT * FROM Usuario WHERE email = $1 OR cpf = $2', [email, cpf]); // <<< USA db.query
 
     if (userExists.rows.length > 0) {
-      return res.status(400).json({ msg: 'Usuário com este e-mail ou CPF já existe.' });
+      return res.status(400).json({ msg: 'UsuÃ¡rio com este e-mail ou CPF jÃ¡ existe.' });
     }
 
-    // Removido o código de hash do bcrypt. 
-    // Nós vamos enviar a senha como texto puro para o banco,
-    // e o TRIGGER 'trigger_hash_senha' que você criou fará a criptografia.
-    // Esta é a maneira correta de fazer, dado o seu script SQL.
+    // Removido o cï¿½digo de hash do bcrypt. 
+    // Nï¿½s vamos enviar a senha como texto puro para o banco,
+    // e o TRIGGER 'trigger_hash_senha' que vocï¿½ criou farï¿½ a criptografia.
+    // Esta ï¿½ a maneira correta de fazer, dado o seu script SQL.
 
     const newUser = await db.query( // <<< USA db.query
       'INSERT INTO Usuario (nome, email, senha, tipo_usuario, cpf, ativo) VALUES ($1, $2, $3, $4, $5, true) RETURNING id_usuario, nome, email',
       [nome, email, senha, tipo_usuario, cpf]
     );
-    res.status(201).json({ msg: 'Usuário cadastrado com sucesso!', user: newUser.rows[0] });
+    res.status(201).json({ msg: 'UsuÃ¡rio cadastrado com sucesso!', user: newUser.rows[0] });
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Erro no servidor');
   }
 });
 
-// Rota POST para login de usuário
+// Rota POST para login de usuï¿½rio
 router.post('/login', async (req, res) => {
   const { email, senha } = req.body;
 
-  // Validação básica
+  // Validaï¿½ï¿½o bï¿½sica
   if (!email || !senha) {
-    return res.status(400).json({ msg: 'Por favor, forneça e-mail e senha.' });
+    return res.status(400).json({ msg: 'Por favor, forneÃ§a e-mail e senha.' });
   }
 
   try {
     const userResult = await db.query('SELECT * FROM Usuario WHERE email = $1', [email]); // <<< USA db.query
 
     if (userResult.rows.length === 0) {
-      // Usuário não encontrado
-      return res.status(400).json({ msg: 'Credenciais inválidas' });
+      // Usuï¿½rio nï¿½o encontrado
+      return res.status(400).json({ msg: 'Credenciais invÃ¡lidas' });
     }
 
     const user = userResult.rows[0];
 
     // 2. Comparar a senha fornecida com a senha hasheada no banco
-    // A senha que vem do banco está em user.senha
-    // ATENÇÃO: A função bcrypt.compare já sabe como lidar com o hash e o salt.
+    // A senha que vem do banco estï¿½ em user.senha
+    // ATENï¿½ï¿½O: A funï¿½ï¿½o bcrypt.compare jï¿½ sabe como lidar com o hash e o salt.
     const isMatch = await bcrypt.compare(senha, user.senha);
 
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Credenciais inválidas' });
+      return res.status(400).json({ msg: 'Credenciais invÃ¡lidas' });
     }
 
     // 3. Se as credenciais estiverem corretas, criar e retornar o token JWT

@@ -6,9 +6,9 @@ import Login from './pages/Login';
 import './App.css';
 import { useEffect, useState } from 'react'; // Importe useState e useEffect
 import axios from 'axios'; // Importe axios
-import AnuncioForm from './components/AnuncioForm'; // Importe o novo formulário
+import AnuncioForm from './components/AnuncioForm'; // Importe o novo formulï¿½rio
 import './components/Dashboard.css'; // <<< IMPORTA O NOVO CSS
-import Home from './pages/Home'; // <<< IMPORTA A NOVA PÁGINA HOME
+import Home from './pages/Home'; // <<< IMPORTA A NOVA Pï¿½GINA HOME
 import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
 
 // Componente para o Painel de Controle (Dashboard)
@@ -16,37 +16,37 @@ const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
     const [meusAnuncios, setMeusAnuncios] = useState([]);
 
-    // Função para buscar os anúncios do usuário
+    // Funï¿½ï¿½o para buscar os anï¿½ncios do usuï¿½rio
     const fetchMeusAnuncios = async () => {
         try {
             const res = await axios.get('/api/anuncios/meus');
             setMeusAnuncios(res.data);
         } catch (err) {
-            console.error("Erro ao buscar anúncios", err);
+            console.error("Erro ao buscar anÃºncios", err);
         }
     };
 
-    // useEffect para chamar a função de busca quando o componente montar
+    // useEffect para chamar a funï¿½ï¿½o de busca quando o componente montar
     useEffect(() => {
         fetchMeusAnuncios();
     }, []);
 
-    // Função para adicionar o novo anúncio à lista sem precisar recarregar a página
+    // Funï¿½ï¿½o para adicionar o novo anï¿½ncio ï¿½ lista sem precisar recarregar a pï¿½gina
     const handleAnuncioCriado = (novoAnuncio) => {
         setMeusAnuncios([novoAnuncio, ...meusAnuncios]);
     };
 
-    // Função para deletar um anúncio
+    // Funï¿½ï¿½o para deletar um anï¿½ncio
     const handleDelete = async (idAnuncio) => {
-        if (window.confirm('Tem certeza que deseja deletar este anúncio?')) {
+        if (window.confirm('Tem certeza que deseja deletar este anÃºncio?')) {
             try {
                 await axios.delete(`/api/anuncios/${idAnuncio}`);
-                // Filtra a lista, removendo o anúncio que foi deletado
+                // Filtra a lista, removendo o anï¿½ncio que foi deletado
                 setMeusAnuncios(meusAnuncios.filter(anuncio => anuncio.id_anuncio !== idAnuncio));
-                alert('Anúncio deletado com sucesso.');
+                alert('AnÃºncio deletado com sucesso.');
             } catch (err) {
                 console.error(err.response.data);
-                alert('Erro ao deletar o anúncio.');
+                alert('Erro ao deletar o anÃºncio.');
             }
         }
     };
@@ -55,14 +55,14 @@ const Dashboard = () => {
         <div className="dashboard-container">
             <div className="dashboard-header">
                 <h1>Painel de Controle</h1>
-                <span>Olá, {user?.nome}!</span>
+                <span>OlÃ¡, {user?.nome}!</span>
                 <button onClick={logout}>Sair</button>
             </div>
             
             <AnuncioForm onAnuncioCriado={handleAnuncioCriado} />
             
             <div className="anuncios-section">
-                <h2>Meus Anúncios Publicados</h2>
+                <h2>Meus AnÃºncios Publicados</h2>
                 {meusAnuncios.length > 0 ? (
                     <ul className="anuncios-lista">
                         {meusAnuncios.map(anuncio => (
@@ -74,7 +74,7 @@ const Dashboard = () => {
                         ))}
                     </ul>
                 ) : (
-                    <p>Você ainda não publicou nenhum anúncio.</p>
+                    <p>VocÃª ainda nÃ£o publicou nenhum anÃºncio.</p>
                 )}
             </div>
         </div>
@@ -91,14 +91,14 @@ const AppContent = () => {
   return (
     <Router>
       <div className="App">
-        {/* Barra de Navegação Genérica - Poderia ser um componente separado */}
+        {/* Barra de Navegaï¿½ï¿½o Genï¿½rica - Poderia ser um componente separado */}
         <header className="main-header">
             <Link to="/" className="logo">TELOSERA</Link>
             <nav>
                 {isAuthenticated ? (
                     <>
                         <Link to="/dashboard">Meu Painel</Link>
-                        {/* O botão de Sair agora está só no dashboard, mas poderia estar aqui */}
+                        {/* O botï¿½o de Sair agora estï¿½ sï¿½ no dashboard, mas poderia estar aqui */}
                     </>
                 ) : (
                     <>
@@ -109,11 +109,11 @@ const AppContent = () => {
             </nav>
         </header>
 
-        {/* Conteúdo da página */}
+        {/* Conteï¿½do da pï¿½gina */}
         <main>
           <Routes>
-            <Route path="/" element={<Home />} /> {/* <<< ROTA DA PÁGINA INICIAL */}
-            <Route path="/anuncio/:id" element={<AnuncioDetalhe />} /> {/* <<< NOVA ROTA DINÂMICA */}
+            <Route path="/" element={<Home />} /> {/* <<< ROTA DA Pï¿½GINA INICIAL */}
+            <Route path="/anuncio/:id" element={<AnuncioDetalhe />} /> {/* <<< NOVA ROTA DINï¿½MICA */}
             <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
             <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
             <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />

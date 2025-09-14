@@ -3,19 +3,19 @@ import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' });
-  const { login } = useContext(AuthContext); // Pega a funÁ„o login do contexto
+  const { login } = useContext(AuthContext); // Pega a fun√ßao login do contexto
 
   const { email, senha } = formData;
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async e => {
     e.preventDefault();
-    const success = await login(email, senha); // Chama a funÁ„o de login do contexto
+    const success = await login(email, senha); // Chama a fun√ßao de login do contexto
     if (success) {
       alert('Login realizado com sucesso!');
-      // O redirecionamento agora È feito no App.js
+      // O redirecionamento agora e feito no App.js
     } else {
-      alert('Erro no login: Credenciais inv·lidas.');
+      alert('Erro no login: Credenciais inv√°lidas.');
     }
   };
 

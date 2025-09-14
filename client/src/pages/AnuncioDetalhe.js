@@ -16,15 +16,15 @@ const AnuncioDetalhe = () => {
         const res = await axios.get(`/api/anuncios/${id}`);
         setAnuncio(res.data);
       } catch (err) {
-        setError('An˙ncio n„o encontrado ou indisponÌvel.');
-        console.error("Erro ao buscar detalhes do an˙ncio:", err);
+        setError('An√∫ncio n√£o encontrado ou indispon√≠vel.');
+        console.error("Erro ao buscar detalhes do an√∫ncio:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchAnuncio();
-  }, [id]); // O useEffect ser· executado novamente se o ID na URL mudar
+  }, [id]); // O useEffect serÔøΩ executado novamente se o ID na URL mudar
 
   if (loading) {
     return <div className="container">Carregando...</div>;
@@ -43,7 +43,7 @@ const AnuncioDetalhe = () => {
       <div className="anuncio-main-content">
         <h1>{anuncio.titulo}</h1>
         <div className="image-gallery-placeholder">
-          {/* Placeholder para m˙ltiplas imagens, como na Figura 11 */}
+          {/* Placeholder para mÔøΩltiplas imagens, como na Figura 11 */}
           <div className="placeholder-box">IMAGEM</div>
           <div className="placeholder-box">IMAGEM</div>
           <div className="placeholder-box">IMAGEM</div>
@@ -51,23 +51,23 @@ const AnuncioDetalhe = () => {
         <h2>Detalhes</h2>
         <p>{anuncio.descricao}</p>
         <ul>
-            <li><strong>Tipo de An˙ncio:</strong> {anuncio.tipo === 'O' ? 'Oferta de Vaga' : 'Oferta de ServiÁo'}</li>
-            <li><strong>¡rea de AtuaÁ„o:</strong> {anuncio.nome_area}</li>
-            <li><strong>ServiÁo Relacionado:</strong> {anuncio.nome_servico}</li>
+            <li><strong>Tipo de An√∫ncio:</strong> {anuncio.tipo === 'O' ? 'Oferta de Vaga' : 'Oferta de Servi√ßo'}</li>
+            <li><strong>√Årea de Atua√ß√£o:</strong> {anuncio.nome_area}</li>
+            <li><strong>Servi√ßo Relacionado:</strong> {anuncio.nome_servico}</li>
         </ul>
       </div>
       <aside className="anuncio-sidebar">
         <div className="info-box">
-          <h3>InformaÁıes do {anuncio.tipo === 'O' ? 'Contratante' : 'Prestador'}</h3>
+          <h3>Informa√ß√µes do {anuncio.tipo === 'O' ? 'Contratante' : 'Prestador'}</h3>
           <p><strong>Nome:</strong> {anuncio.nome_usuario}</p>
-          {/* Futuramente, o acesso ao contato pode ser restrito a usu·rios logados */}
+          {/* Futuramente, o acesso ao contato pode ser restrito a usuÔøΩrios logados */}
           <h4>Contato</h4>
           <p><strong>Email:</strong> {anuncio.email_usuario}</p>
-          <p><strong>Telefone:</strong> {anuncio.telefone_usuario || 'N„o informado'}</p>
+          <p><strong>Telefone:</strong> {anuncio.telefone_usuario || 'N√£o informado'}</p>
           <button className="profile-button">Acessar Perfil</button>
         </div>
         <div className="info-box">
-          <h3>AvaliaÁ„o</h3>
+          <h3>Avalia√ß√£o</h3>
           <div className="stars-placeholder">????? (4.5)</div>
         </div>
       </aside>

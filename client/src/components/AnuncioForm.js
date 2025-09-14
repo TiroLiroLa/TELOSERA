@@ -6,16 +6,16 @@ const AnuncioForm = ({ onAnuncioCriado }) => {
   const [areas, setAreas] = useState([]);
   const [servicos, setServicos] = useState([]);
 
-  // Estado do formulário, agora com os campos que faltavam
+  // Estado do formulï¿½rio, agora com os campos que faltavam
   const [formData, setFormData] = useState({
     titulo: '',
     descricao: '',
-    tipo: 'O', // 'O' -> Oferta, 'S' -> Serviço
+    tipo: 'O', // 'O' -> Oferta, 'S' -> Serviï¿½o
     fk_Area_id_area: '',
     fk_id_servico: '',
   });
 
-  // useEffect para buscar os dados das áreas e serviços quando o componente é montado
+  // useEffect para buscar os dados das ï¿½reas e serviï¿½os quando o componente ï¿½ montado
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -26,7 +26,7 @@ const AnuncioForm = ({ onAnuncioCriado }) => {
         setAreas(resAreas.data);
         setServicos(resServicos.data);
       } catch (error) {
-        console.error("Erro ao buscar dados para o formulário", error);
+        console.error("Erro ao buscar dados para o formulÃ¡rio", error);
       }
     };
     fetchData();
@@ -38,54 +38,54 @@ const AnuncioForm = ({ onAnuncioCriado }) => {
 
   const onSubmit = async e => {
     e.preventDefault();
-    // Validação para garantir que uma opção foi selecionada
+    // Validaï¿½ï¿½o para garantir que uma opï¿½ï¿½o foi selecionada
     if (!fk_Area_id_area || !fk_id_servico) {
-        alert("Por favor, selecione uma Área e um Serviço.");
+        alert("Por favor, selecione uma Ãrea e um ServiÃ§o.");
         return;
     }
     try {
       const res = await axios.post('/api/anuncios', formData);
-      alert('Anúncio criado com sucesso!');
+      alert('AnÃºncio criado com sucesso!');
       onAnuncioCriado(res.data);
-      // Reseta o formulário
+      // Reseta o formulï¿½rio
       setFormData({ titulo: '', descricao: '', tipo: 'O', fk_Area_id_area: '', fk_id_servico: '' });
     } catch (err) {
       console.error(err.response ? err.response.data : err.message);
-      alert('Erro ao criar anúncio.');
+      alert('Erro ao criar anÃºncio.');
     }
   };
 
   return (
     <div className="form-container">
-      <h2>Criar Novo Anúncio</h2>
+      <h2>Criar Novo AnÃºncio</h2>
       <form onSubmit={onSubmit}>
-        <input type="text" name="titulo" value={titulo} onChange={onChange} placeholder="Título do Anúncio" required />
-        <textarea name="descricao" value={descricao} onChange={onChange} placeholder="Descrição detalhada" required />
+        <input type="text" name="titulo" value={titulo} onChange={onChange} placeholder="TÃ­tulo do AnÃºncio" required />
+        <textarea name="descricao" value={descricao} onChange={onChange} placeholder="DescriÃ§Ã£o detalhada" required />
         
         <select name="fk_Area_id_area" value={fk_Area_id_area} onChange={onChange} required>
-            <option value="">-- Selecione a Área de Atuação --</option>
+            <option value="">-- Selecione a Area de AtuaÃ§Ã£o --</option>
             {areas.map(area => (
                 <option key={area.id_area} value={area.id_area}>{area.nome}</option>
             ))}
         </select>
         
         <select name="fk_id_servico" value={fk_id_servico} onChange={onChange} required>
-            <option value="">-- Selecione o Tipo de Serviço --</option>
+            <option value="">-- Selecione o Tipo de ServiÃ§o --</option>
             {servicos.map(servico => (
                 <option key={servico.id_servico} value={servico.id_servico}>{servico.nome}</option>
             ))}
         </select>
 
         <div className="radio-group">
-          <p>Tipo de Anúncio:</p>
+          <p>Tipo de AnÃºncio:</p>
           <label>
             <input type="radio" name="tipo" value="O" checked={tipo === 'O'} onChange={onChange} /> Oferta de Vaga
           </label>
           <label>
-            <input type="radio" name="tipo" value="S" checked={tipo === 'S'} onChange={onChange} /> Oferecer Serviço
+            <input type="radio" name="tipo" value="S" checked={tipo === 'S'} onChange={onChange} /> Oferecer ServiÃ§o
           </label>
         </div>
-        <button type="submit">Publicar Anúncio</button>
+        <button type="submit">Publicar AnÃºncio</button>
       </form>
     </div>
   );

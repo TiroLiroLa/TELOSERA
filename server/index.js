@@ -1,4 +1,4 @@
-// Importa as dependências
+// Importa as dependï¿½ncias
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -7,18 +7,18 @@ const cors = require('cors');
 const app = express();
 
 // Middlewares
-app.use(cors()); // Permite requisições de outras origens
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(cors()); // Permite requisiï¿½ï¿½es de outras origens
+app.use(express.json()); // Habilita o parsing de JSON no corpo das requisiï¿½ï¿½es
 
 // Rota de teste
 app.get('/', (req, res) => {
-  res.send('API do TELOSERA está funcionando!');
+  res.send('API do TELOSERA estÃ¡ funcionando!');
 });
 
-// Usar rotas de usuário
+// Usar rotas de usuï¿½rio
 app.use('/api/users', require('./routes/userRoutes')); // Nova linha
 
-// Usar rotas de anúncios
+// Usar rotas de anï¿½ncios
 app.use('/api/anuncios', require('./routes/anuncioRoutes')); // <<< NOVA LINHA
 
 app.use('/api/dados', require('./routes/dadosRoutes')); // <<< NOVA LINHA

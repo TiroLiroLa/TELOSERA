@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 
-// Componente funcional para a p·gina de cadastro
+// Componente funcional para a p√°gina de cadastro
 const Cadastro = () => {
-  // O hook useState gerencia o estado do formul·rio.
-  // 'formData' È um objeto que guarda todos os valores dos campos.
-  // 'setFormData' È a funÁ„o que usamos para atualizar esses valores.
+  // O hook useState gerencia o estado do formul√°rio.
+  // 'formData' √© um objeto que guarda todos os valores dos campos.
+  // 'setFormData' ÔøΩ a funÔøΩÔøΩo que usamos para atualizar esses valores.
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -17,20 +17,20 @@ const Cadastro = () => {
     tipo_usuario: 'P', // 'P' para Prestador, 'E' para Empresa
   });
 
-  // Desestruturando as vari·veis do estado para facilitar o uso no JSX
+  // Desestruturando as variÔøΩveis do estado para facilitar o uso no JSX
   const { nome, email, senha, confirmarSenha, cpf, tipo_usuario } = formData;
 
-  // FunÁ„o 'onChange' que È chamada toda vez que o usu·rio digita em um campo.
+  // FunÔøΩÔøΩo 'onChange' que ÔøΩ chamada toda vez que o usuÔøΩrio digita em um campo.
   // Ela atualiza o estado 'formData' com o novo valor.
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // FunÁ„o 'onSubmit' que È chamada quando o formul·rio È enviado.
+  // FunÔøΩÔøΩo 'onSubmit' que ÔøΩ chamada quando o formulÔøΩrio ÔøΩ enviado.
   const onSubmit = async e => {
-    e.preventDefault(); // Impede o recarregamento da p·gina
+    e.preventDefault(); // Impede o recarregamento da pÔøΩgina
 
-    // ValidaÁ„o simples para verificar se as senhas coincidem
+    // ValidaÔøΩÔøΩo simples para verificar se as senhas coincidem
     if (senha !== confirmarSenha) {
-      alert('As senhas n„o coincidem!');
+      alert('As senhas n√£o coincidem!');
       return;
     }
 
@@ -44,7 +44,7 @@ const Cadastro = () => {
         tipo_usuario,
       };
 
-      // ConfiguraÁ„o para a requisiÁ„o POST
+      // ConfiguraÔøΩÔøΩo para a requisiÔøΩÔøΩo POST
       const config = {
         headers: {
           'Content-Type': 'application/json',
@@ -54,13 +54,13 @@ const Cadastro = () => {
       // Converte o objeto JavaScript para uma string JSON
       const body = JSON.stringify(novoUsuario);
 
-      // Faz a requisiÁ„o POST para a nossa API backend
-      // A URL completa È http://localhost:3001/api/users/register
+      // Faz a requisiÔøΩÔøΩo POST para a nossa API backend
+      // A URL completa ÔøΩ http://localhost:3001/api/users/register
       const res = await axios.post('/api/users/register', body, config);
 
       console.log(res.data); // Exibe a resposta da API no console
       alert('Cadastro realizado com sucesso!');
-      // Aqui vocÍ poderia redirecionar o usu·rio para a p·gina de login
+      // Aqui vocÔøΩ poderia redirecionar o usuÔøΩrio para a pÔøΩgina de login
 
     } catch (err) {
       console.error(err.response.data);
@@ -87,7 +87,7 @@ const Cadastro = () => {
         <div>
           <input
             type="email"
-            placeholder="EndereÁo de E-mail"
+            placeholder="Endere√ßo de E-mail"
             name="email"
             value={email}
             onChange={onChange}
@@ -134,7 +134,7 @@ const Cadastro = () => {
             value="P"
             checked={tipo_usuario === 'P'}
             onChange={onChange}
-          /> Prestador de ServiÁo
+          /> Prestador de Servi√ßo
           <input
             type="radio"
             name="tipo_usuario"

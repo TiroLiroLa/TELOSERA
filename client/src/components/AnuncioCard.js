@@ -10,19 +10,19 @@ const AnuncioCard = ({ anuncio }) => {
     <Link to={`/anuncio/${anuncio.id_anuncio}`} className="card-link">
       <div className="card">
         <div className="card-image-placeholder">
-          <span>IMAGEM TEMPOR¡RIA</span>
+          <span>IMAGEM TEMPOR√ÅRIA</span>
         </div>
         <div className="card-content">
           <h3 className="card-title">{anuncio.titulo}</h3>
           {isOferta ? (
             <>
               <p className="card-info"><strong>Contratante:</strong> {anuncio.nome_usuario}</p>
-              <p className="card-info"><strong>EspecializaÁ„o:</strong> {anuncio.nome_area}</p>
+              <p className="card-info"><strong>Especializa√ß√£o:</strong> {anuncio.nome_area}</p>
             </>
           ) : (
             <>
               <p className="card-info"><strong>Prestador:</strong> {anuncio.nome_usuario}</p>
-              <p className="card-info"><strong>ServiÁo Principal:</strong> {anuncio.nome_servico}</p>
+              <p className="card-info"><strong>Servi√ßo Principal:</strong> {anuncio.nome_servico}</p>
             </>
           )}
         </div>

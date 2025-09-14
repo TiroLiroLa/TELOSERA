@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth'); // Nosso middleware de autenticação
-const db = require('../config/db'); // <<< IMPORTA A CONEXÃO CENTRALIZADA
+const auth = require('../middleware/auth'); // Nosso middleware de autenticaï¿½ï¿½o
+const db = require('../config/db'); // <<< IMPORTA A CONEXï¿½O CENTRALIZADA
 
 // @route   GET api/anuncios/:id
-// @desc    Buscar os detalhes de um único anúncio
-// @access  Público
+// @desc    Buscar os detalhes de um ï¿½nico anï¿½ncio
+// @access  Pï¿½blico
 router.get('/:id', async (req, res) => {
     try {
         const idAnuncio = req.params.id;
@@ -24,7 +24,7 @@ router.get('/:id', async (req, res) => {
         const result = await db.query(query, [idAnuncio]);
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+            return res.status(404).json({ msg: 'AnÃºncio nÃ£o encontrado.' });
         }
 
         res.json(result.rows[0]);
@@ -35,12 +35,12 @@ router.get('/:id', async (req, res) => {
 });
 
 // @route   GET api/anuncios
-// @desc    Buscar todos os anúncios públicos e ativos
-// @access  Público
+// @desc    Buscar todos os anï¿½ncios pï¿½blicos e ativos
+// @access  Pï¿½blico
 router.get('/', async (req, res) => {
     try {
-        // Este SQL busca todos os anúncios e junta (JOIN) com as tabelas de Usuário,
-        // Área e Serviço para trazer os nomes em vez de apenas os IDs.
+        // Este SQL busca todos os anï¿½ncios e junta (JOIN) com as tabelas de Usuï¿½rio,
+        // ï¿½rea e Serviï¿½o para trazer os nomes em vez de apenas os IDs.
         const query = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
@@ -63,16 +63,16 @@ router.get('/', async (req, res) => {
 });
 
 // @route   POST api/anuncios
-// @desc    Criar um novo anúncio
+// @desc    Criar um novo anï¿½ncio
 // @access  Privado
 router.post('/', auth, async (req, res) => {
-  // O middleware 'auth' nos dá acesso a req.user.id
+  // O middleware 'auth' nos dï¿½ acesso a req.user.id
   const idUsuario = req.user.id;
   const { titulo, descricao, tipo, fk_Area_id_area, fk_id_servico } = req.body;
 
-  // Validação
+  // Validaï¿½ï¿½o
   if (!titulo || !descricao || !tipo) {
-    return res.status(400).json({ msg: 'Por favor, preencha os campos obrigatórios.' });
+    return res.status(400).json({ msg: 'Por favor, preencha os campos obrigatÃ³rios.' });
   }
 
   try {
@@ -89,7 +89,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // @route   GET api/anuncios/meus
-// @desc    Buscar todos os anúncios do usuário logado
+// @desc    Buscar todos os anï¿½ncios do usuï¿½rio logado
 // @access  Privado
 router.get('/meus', auth, async (req, res) => {
     try {
@@ -105,29 +105,29 @@ router.get('/meus', auth, async (req, res) => {
 });
 
 // @route   DELETE api/anuncios/:id
-// @desc    Deletar um anúncio
+// @desc    Deletar um anï¿½ncio
 // @access  Privado
 router.delete('/:id', auth, async (req, res) => {
   try {
     const idAnuncio = req.params.id;
     const idUsuario = req.user.id;
 
-    // 1. Verificar se o anúncio existe e pertence ao usuário
+    // 1. Verificar se o anï¿½ncio existe e pertence ao usuï¿½rio
     const anuncioResult = await db.query('SELECT * FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]); // <<< USA db.query
 
     if (anuncioResult.rows.length === 0) {
-      return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+      return res.status(404).json({ msg: 'AnÃºncio nÃ£o encontrado.' });
     }
 
     const anuncio = anuncioResult.rows[0];
     if (anuncio.fk_id_usuario !== idUsuario) {
-      // Se o ID do dono do anúncio for diferente do ID do usuário fazendo a requisição
-      return res.status(401).json({ msg: 'Usuário não autorizado.' });
+      // Se o ID do dono do anï¿½ncio for diferente do ID do usuï¿½rio fazendo a requisiï¿½ï¿½o
+      return res.status(401).json({ msg: 'UsuÃ¡rio nÃ£o autorizado.' });
     }
 
-    // 2. Se a verificação passar, deletar o anúncio
+    // 2. Se a verificaï¿½ï¿½o passar, deletar o anï¿½ncio
     await db.query('DELETE FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]); // <<< USA db.query
-        res.json({ msg: 'Anúncio removido com sucesso.' });
+        res.json({ msg: 'AnÃºncio removido com sucesso.' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erro no servidor');

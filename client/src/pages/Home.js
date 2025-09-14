@@ -13,7 +13,7 @@ const Home = () => {
         const res = await axios.get('/api/anuncios');
         setAnuncios(res.data);
       } catch (err) {
-        console.error("Erro ao buscar anúncios públicos:", err);
+        console.error("Erro ao buscar anÃºncios pÃºblicos:", err);
       } finally {
         setLoading(false);
       }
@@ -22,18 +22,18 @@ const Home = () => {
     fetchAnuncios();
   }, []);
 
-  // Filtra os anúncios pelos tipos definidos no seu banco ('O' e 'S')
+  // Filtra os anÃºncios pelos tipos definidos no seu banco ('O' e 'S')
   const ofertasTrabalho = anuncios.filter(anuncio => anuncio.tipo === 'O');
   const profissionaisDisponiveis = anuncios.filter(anuncio => anuncio.tipo === 'S');
 
   if (loading) {
-    return <div>Carregando anúncios...</div>;
+    return <div>Carregando anÃºncios...</div>;
   }
 
   return (
     <div className="home-container">
       <section className="anuncios-section">
-        <h2>Ofertas de trabalho na região</h2>
+        <h2>Ofertas de trabalho na regiÃ£o</h2>
         <div className="cards-container">
           {ofertasTrabalho.length > 0 ? (
             ofertasTrabalho.map(anuncio => <AnuncioCard key={anuncio.id_anuncio} anuncio={anuncio} />)
@@ -44,12 +44,12 @@ const Home = () => {
       </section>
 
       <section className="anuncios-section">
-        <h2>Profissionais disponíveis na região</h2>
+        <h2>Profissionais dispoÃ­veis na regiÃ£o</h2>
         <div className="cards-container">
           {profissionaisDisponiveis.length > 0 ? (
             profissionaisDisponiveis.map(anuncio => <AnuncioCard key={anuncio.id_anuncio} anuncio={anuncio} />)
           ) : (
-            <p>Nenhum profissional disponível encontrado no momento.</p>
+            <p>Nenhum profissional disponÃ­vel encontrado no momento.</p>
           )}
         </div>
       </section>
