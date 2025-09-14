@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react'; // Importe useState e useEffect
 import axios from 'axios'; // Importe axios
 import AnuncioForm from './components/AnuncioForm'; // Importe o novo formulário
 import './components/Dashboard.css'; // <<< IMPORTA O NOVO CSS
+import Home from './pages/Home'; // <<< IMPORTA A NOVA PÁGINA HOME
+import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
 
 // Componente para o Painel de Controle (Dashboard)
 const Dashboard = () => {
@@ -79,7 +81,6 @@ const Dashboard = () => {
     );
 };
 
-// Componente que renderiza a aplicação
 const AppContent = () => {
   const { isAuthenticated, loading } = useContext(AuthContext);
 
@@ -90,21 +91,36 @@ const AppContent = () => {
   return (
     <Router>
       <div className="App">
-        <nav>
-            {isAuthenticated ? (
-                <Link to="/dashboard">Painel</Link>
-            ) : (
-                <>
-                    <Link to="/login">Login</Link> | <Link to="/cadastro">Cadastro</Link>
-                </>
-            )}
-        </nav>
-        <Routes>
-          <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
-          <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
-          <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-          <Route path="/" element={<Navigate to="/dashboard" />} />
-        </Routes>
+        {/* Barra de Navegação Genérica - Poderia ser um componente separado */}
+        <header className="main-header">
+            <Link to="/" className="logo">TELOSERA</Link>
+            <nav>
+                {isAuthenticated ? (
+                    <>
+                        <Link to="/dashboard">Meu Painel</Link>
+                        {/* O botão de Sair agora está só no dashboard, mas poderia estar aqui */}
+                    </>
+                ) : (
+                    <>
+                        <Link to="/login">Login</Link>
+                        <Link to="/cadastro">Cadastre-se</Link>
+                    </>
+                )}
+            </nav>
+        </header>
+
+        {/* Conteúdo da página */}
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} /> {/* <<< ROTA DA PÁGINA INICIAL */}
+            <Route path="/anuncio/:id" element={<AnuncioDetalhe />} /> {/* <<< NOVA ROTA DINÂMICA */}
+            <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
+            <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
+            <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+            {/* Rota de fallback, se nenhuma outra corresponder */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );

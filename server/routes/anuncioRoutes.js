@@ -3,6 +3,64 @@ const router = express.Router();
 const auth = require('../middleware/auth'); // Nosso middleware de autenticação
 const db = require('../config/db'); // <<< IMPORTA A CONEXÃO CENTRALIZADA
 
+// @route   GET api/anuncios/:id
+// @desc    Buscar os detalhes de um único anúncio
+// @access  Público
+router.get('/:id', async (req, res) => {
+    try {
+        const idAnuncio = req.params.id;
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
+                u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
+                area.nome as nome_area,
+                serv.nome as nome_servico
+            FROM Anuncio a
+            JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
+            JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
+            JOIN Servico serv ON a.fk_id_servico = serv.id_servico
+            WHERE a.id_anuncio = $1 AND a.status = true;
+        `;
+        const result = await db.query(query, [idAnuncio]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+// @route   GET api/anuncios
+// @desc    Buscar todos os anúncios públicos e ativos
+// @access  Público
+router.get('/', async (req, res) => {
+    try {
+        // Este SQL busca todos os anúncios e junta (JOIN) com as tabelas de Usuário,
+        // Área e Serviço para trazer os nomes em vez de apenas os IDs.
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
+                u.nome as nome_usuario,
+                area.nome as nome_area,
+                serv.nome as nome_servico
+            FROM Anuncio a
+            JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
+            JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
+            JOIN Servico serv ON a.fk_id_servico = serv.id_servico
+            WHERE a.status = true
+            ORDER BY a.data_publicacao DESC;
+        `;
+        const anuncios = await db.query(query);
+        res.json(anuncios.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
 
 // @route   POST api/anuncios
 // @desc    Criar um novo anúncio
@@ -24,7 +82,10 @@ router.post('/', auth, async (req, res) => {
             [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico]
         );
         res.status(201).json(novoAnuncio.rows[0]);
-    } catch (err) { /* ... */ }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 // @route   GET api/anuncios/meus
@@ -37,7 +98,10 @@ router.get('/meus', auth, async (req, res) => {
             [req.user.id]
         );
         res.json(anuncios.rows);
-    } catch (err) { /* ... */ }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 // @route   DELETE api/anuncios/:id
@@ -64,7 +128,10 @@ router.delete('/:id', auth, async (req, res) => {
     // 2. Se a verificação passar, deletar o anúncio
     await db.query('DELETE FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]); // <<< USA db.query
         res.json({ msg: 'Anúncio removido com sucesso.' });
-    } catch (err) { /* ... */ }
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 
