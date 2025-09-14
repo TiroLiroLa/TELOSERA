@@ -5,6 +5,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
 const { Pool } = require('pg');
+const auth = require('../middleware/auth'); // Importe o middleware de autenticação
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -12,6 +13,25 @@ const pool = new Pool({
   database: process.env.DB_DATABASE,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
+});
+
+// Rota GET para buscar dados do usuário logado (ROTA PROTEGIDA)
+router.get('/me', auth, async (req, res) => {
+  try {
+    // O middleware 'auth' já validou o token e adicionou o ID do usuário em req.user.id
+    const user = await pool.query('SELECT id_usuario, nome, email, tipo_usuario FROM Usuario WHERE id_usuario = $1', [
+      req.user.id,
+    ]);
+
+    if(user.rows.length === 0) {
+        return res.status(404).json({ msg: 'Usuário não encontrado.'})
+    }
+
+    res.json(user.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erro no Servidor');
+  }
 });
 
 // Rota POST para registrar um novo usuário
