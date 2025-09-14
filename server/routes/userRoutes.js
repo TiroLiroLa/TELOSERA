@@ -2,8 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-// NÃO precisamos mais do bcrypt, pois o trigger do banco de dados fará o hash.
-// const bcrypt = require('bcryptjs'); 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -51,6 +51,57 @@ router.post('/register', async (req, res) => {
 
     // E enviamos uma resposta de erro mais genérica, mas ainda útil, para o frontend.
     res.status(500).json({ msg: 'Erro interno do servidor. Verifique o console do backend.' });
+  }
+});
+
+// Rota POST para login de usuário
+router.post('/login', async (req, res) => {
+  const { email, senha } = req.body;
+
+  // Validação básica
+  if (!email || !senha) {
+    return res.status(400).json({ msg: 'Por favor, forneça e-mail e senha.' });
+  }
+
+  try {
+    // 1. Encontrar o usuário pelo e-mail
+    const userResult = await pool.query('SELECT * FROM Usuario WHERE email = $1', [email]);
+
+    if (userResult.rows.length === 0) {
+      // Usuário não encontrado
+      return res.status(400).json({ msg: 'Credenciais inválidas' });
+    }
+
+    const user = userResult.rows[0];
+
+    // 2. Comparar a senha fornecida com a senha hasheada no banco
+    // A senha que vem do banco está em user.senha
+    // ATENÇÃO: A função bcrypt.compare já sabe como lidar com o hash e o salt.
+    const isMatch = await bcrypt.compare(senha, user.senha);
+
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Credenciais inválidas' });
+    }
+
+    // 3. Se as credenciais estiverem corretas, criar e retornar o token JWT
+    const payload = {
+      user: {
+        id: user.id_usuario,
+      },
+    };
+
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: '5h' }, // O token expira em 5 horas
+      (err, token) => {
+        if (err) throw err;
+        res.json({ token }); // Envia o token para o cliente
+      }
+    );
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erro no servidor');
   }
 });
 
