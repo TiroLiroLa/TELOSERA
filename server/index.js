@@ -25,6 +25,9 @@ app.get('/', (req, res) => {
   res.send('API do TELOSERA está funcionando!');
 });
 
+// Usar rotas de usuário
+app.use('/api/users', require('./routes/userRoutes')); // Nova linha
+
 // Define a porta do servidor
 const PORT = process.env.PORT || 3001;
 
