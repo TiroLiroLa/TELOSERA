@@ -11,17 +11,21 @@ const Dashboard = () => {
     const [publicados, setPublicados] = useState([]);
     const [candidaturas, setCandidaturas] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [confirmados, setConfirmados] = useState([]);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 setLoading(true);
-                const [resPublicados, resCandidaturas] = await Promise.all([
+                const [resPublicados, resCandidaturas, resMeusConfirmados, resTrabalhosConfirmados] = await Promise.all([
                     axios.get('/api/anuncios/meus-publicados'),
-                    axios.get('/api/anuncios/minhas-candidaturas')
+                    axios.get('/api/anuncios/minhas-candidaturas'),
+                    axios.get('/api/anuncios/meus-confirmados'),
+                    axios.get('/api/anuncios/trabalhos-confirmados')
                 ]);
                 setPublicados(resPublicados.data);
                 setCandidaturas(resCandidaturas.data);
+                setConfirmados([...resMeusConfirmados.data, ...resTrabalhosConfirmados.data]);
             } catch (error) {
                 console.error("Erro ao buscar dados do dashboard", error);
             } finally {
@@ -51,6 +55,15 @@ const Dashboard = () => {
                         ))
                     ) : (
                         <p>Você ainda não publicou nenhum anúncio.</p>
+                    )}
+                </Tab>
+                <Tab label={`Confirmados (${confirmados.length})`}>
+                    {confirmados.length > 0 ? (
+                        confirmados.map(item => (
+                            <AnuncioDashboardCard key={`conf-${item.id_anuncio}`} anuncio={item} tipo="confirmado" />
+                        ))
+                    ) : (
+                        <p>Nenhum serviço confirmado ainda.</p>
                     )}
                 </Tab>
                 <Tab label={`Minhas Candidaturas (${candidaturas.length})`}>

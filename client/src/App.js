@@ -13,6 +13,7 @@ import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo compo
 import Perfil from './pages/Perfil';
 import EditarPerfil from './pages/EditarPerfil';
 import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
+import GerenciarAnuncio from './pages/GerenciarAnuncio';
 import Header from './components/Header';
 
 const AppContent = () => {
@@ -36,6 +37,7 @@ const AppContent = () => {
                         <Route path="/" element={<Home />} />
                         <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
                         <Route path="/anuncios/criar" element={isAuthenticated ? <CriarAnuncio /> : <Navigate to="/login" />} />
+                        <Route path="/anuncios/gerenciar/:id" element={isAuthenticated ? <GerenciarAnuncio /> : <Navigate to="/login" />} />
                         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
                         <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
                         <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />

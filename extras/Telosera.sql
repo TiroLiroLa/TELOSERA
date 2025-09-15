@@ -12,7 +12,6 @@ CREATE TABLE Usuario (
     telefone varchar(15),
     identificador varchar(14) NOT NULL,
     nome varchar(255) NOT NULL,
-    foto_perfil_url VARCHAR(255),
     fk_id_ender int
 );
 

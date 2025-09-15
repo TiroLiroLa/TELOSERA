@@ -1,7 +1,61 @@
 const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth'); // Nosso middleware de autentica��o
+const authOptional = require('../middleware/authOptional'); // Precisaremos de um novo middleware
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
+
+// @route   GET /api/anuncios/meus-confirmados
+// @desc    Buscar anúncios que o usuário PUBLICOU e que foram CONFIRMADOS
+// @access  Privado
+router.get('/meus-confirmados', auth, async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo,
+                conf.data_confirmacao,
+                cand.nome as nome_candidato
+            FROM Anuncio a
+            -- Para encontrar o candidato confirmado, precisamos de múltiplos JOINs
+            JOIN Candidatura c ON a.id_anuncio = c.fk_id_anuncio
+            JOIN Confirmacao conf ON c.fk_id_usuario = conf.fk_id_usuario
+            JOIN Usuario cand ON conf.fk_id_usuario = cand.id_usuario
+            WHERE a.fk_id_usuario = $1 AND a.status = false -- Anúncios do usuário logado E que estão encerrados
+            -- A condição acima assume que a confirmação sempre encerra o anúncio.
+            -- Uma verificação mais robusta seria checar se existe uma confirmação associada.
+            ORDER BY conf.data_confirmacao DESC;
+        `;
+        const anuncios = await db.query(query, [req.user.id]);
+        res.json(anuncios.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   GET /api/anuncios/trabalhos-confirmados
+// @desc    Buscar anúncios para os quais o usuário FOI CONFIRMADO
+// @access  Privado
+router.get('/trabalhos-confirmados', auth, async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo,
+                conf.data_confirmacao,
+                emp.nome as nome_empresa
+            FROM Confirmacao conf
+            JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
+            JOIN Anuncio a ON c.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario emp ON a.fk_id_usuario = emp.id_usuario
+            WHERE conf.fk_id_usuario = $1 -- Onde o usuário logado é o confirmado
+            ORDER BY conf.data_confirmacao DESC;
+        `;
+        const trabalhos = await db.query(query, [req.user.id]);
+        res.json(trabalhos.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
 
 // @route   GET /api/anuncios/meus-publicados
 // @desc    Buscar anúncios publicados pelo usuário com contagem de candidatos
@@ -46,6 +100,94 @@ router.get('/minhas-candidaturas', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   GET /api/anuncios/:id/candidatos
+// @desc    Listar candidatos de um anúncio específico
+// @access  Privado (só para o dono do anúncio)
+router.get('/:id/candidatos', auth, async (req, res) => {
+    const idAnuncio = req.params.id;
+    const idUsuarioLogado = req.user.id;
+
+    try {
+        // 1. Verificar se o usuário logado é o dono do anúncio
+        const anuncioResult = await db.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
+        if (anuncioResult.rows.length === 0) {
+            return res.status(404).json({ msg: "Anúncio não encontrado." });
+        }
+        if (anuncioResult.rows[0].fk_id_usuario !== idUsuarioLogado) {
+            return res.status(403).json({ msg: "Acesso não autorizado." }); // 403 Forbidden
+        }
+
+        // 2. Se for o dono, buscar os candidatos
+        const query = `
+            SELECT 
+                u.id_usuario, u.nome,
+                c.data_candidatura
+            FROM Candidatura c
+            JOIN Usuario u ON c.fk_id_usuario = u.id_usuario
+            WHERE c.fk_id_anuncio = $1
+            ORDER BY c.data_candidatura ASC;
+        `;
+        const candidatos = await db.query(query, [idAnuncio]);
+        res.json(candidatos.rows);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   POST /api/anuncios/:id/confirmar
+// @desc    Confirmar um candidato para um serviço
+// @access  Privado (só para o dono do anúncio)
+router.post('/:id/confirmar', auth, async (req, res) => {
+    const idAnuncio = req.params.id;
+    const idUsuarioLogado = req.user.id;
+    const { idCandidatoConfirmado } = req.body; // Recebe o ID do usuário a ser confirmado
+
+    if (!idCandidatoConfirmado) {
+        return res.status(400).json({ msg: "ID do candidato é obrigatório." });
+    }
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Verificar se o usuário logado é o dono do anúncio (segurança)
+        const anuncioResult = await client.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
+        if (anuncioResult.rows.length === 0 || anuncioResult.rows[0].fk_id_usuario !== idUsuarioLogado) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ msg: "Operação não autorizada." });
+        }
+        
+        // 2. (Opcional, mas recomendado) Verificar se a pessoa que está sendo confirmada realmente se candidatou
+        const candidaturaResult = await client.query('SELECT * FROM Candidatura WHERE fk_id_anuncio = $1 AND fk_id_usuario = $2', [idAnuncio, idCandidatoConfirmado]);
+        if (candidaturaResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ msg: "Este usuário não se candidatou para esta vaga." });
+        }
+
+        // 3. Criar o registro na tabela Confirmacao
+        // A tabela 'Confirmacao' precisa do fk_id_usuario, que nesse contexto é o candidato confirmado.
+        await client.query(
+            'INSERT INTO Confirmacao (fk_id_usuario) VALUES ($1)',
+            [idCandidatoConfirmado]
+        );
+        
+        // 4. (Opcional) Mudar o status do anúncio para inativo/fechado, já que a vaga foi preenchida
+        await client.query('UPDATE Anuncio SET status = false WHERE id_anuncio = $1', [idAnuncio]);
+
+        await client.query('COMMIT');
+        res.status(201).json({ msg: "Candidato confirmado com sucesso! O anúncio foi encerrado." });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    } finally {
+        client.release();
     }
 });
 
@@ -131,38 +273,63 @@ router.post('/:id/candidatar', auth, async (req, res) => {
 // @route   GET api/anuncios/:id
 // @desc    Buscar os detalhes de um �nico an�ncio
 // @access  P�blico
-router.get('/:id', async (req, res) => {
+router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middleware 'authOptional'
     try {
         const idAnuncio = req.params.id;
-        const query = `
+        const idUsuarioLogado = req.user?.id; // Pode ser undefined se não houver login
+
+        // 1. Busca os dados essenciais do anúncio primeiro
+        const anuncioBaseQuery = `
+            SELECT 
+                a.status, 
+                a.fk_id_usuario,
+                -- Subquery para encontrar o ID do candidato confirmado, se houver
+                (SELECT conf.fk_id_usuario FROM Confirmacao conf
+                 JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
+                 WHERE c.fk_id_anuncio = a.id_anuncio LIMIT 1) as id_candidato_confirmado
+            FROM Anuncio a
+            WHERE a.id_anuncio = $1;
+        `;
+        const anuncioBaseResult = await db.query(anuncioBaseQuery, [idAnuncio]);
+
+        if (anuncioBaseResult.rows.length === 0) {
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
+
+        const anuncio = anuncioBaseResult.rows[0];
+        const isOwner = idUsuarioLogado === anuncio.fk_id_usuario;
+        const isConfirmedCandidate = idUsuarioLogado === anuncio.id_candidato_confirmado;
+        
+        // 2. Lógica de Permissão
+        if (anuncio.status === false) { // Se o anúncio está encerrado
+            if (!idUsuarioLogado || (!isOwner && !isConfirmedCandidate)) {
+                return res.status(403).json({ msg: "Este anúncio está encerrado e não pode ser visualizado." });
+            }
+        }
+        
+        // 3. Se a permissão foi concedida (anúncio ativo OU usuário autorizado), busca os detalhes completos
+        const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
-                -- A CORREÇÃO ESTÁ AQUI: Renomeando o campo para 'localizacao'
-                ST_AsText(a.local) as localizacao,
+                a.status, ST_AsText(a.local) as localizacao,
                 u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
-                area.nome as nome_area,
-                serv.nome as nome_servico,
-                c.nome as nome_cidade,
-                e.uf as uf_estado
+                area.nome as nome_area, serv.nome as nome_servico,
+                c.nome as nome_cidade, e.uf as uf_estado
             FROM Anuncio a
             JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
             JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
             JOIN Servico serv ON a.fk_id_servico = serv.id_servico
             LEFT JOIN Cidade c ON a.fk_id_cidade = c.id_cidade
             LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
-            WHERE a.id_anuncio = $1 AND a.status = true;
+            WHERE a.id_anuncio = $1;
         `;
-        const result = await db.query(query, [idAnuncio]);
-        
-        if (result.rows.length === 0) {
-            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
-        }
+        const detalhesResult = await db.query(detalhesQuery, [idAnuncio]);
 
-        res.json(result.rows[0]);
+        res.json(detalhesResult.rows[0]);
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Erro no servidor');
+        res.status(500).send("Erro no servidor");
     }
 });
 

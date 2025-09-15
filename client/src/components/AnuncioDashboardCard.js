@@ -10,7 +10,7 @@ const AnuncioDashboardCard = ({ anuncio, tipo }) => {
         return (
             <div className="anuncio-dashboard-card">
                 <div className="card-info">
-                    <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
+                    <h3><Link to={`/anuncios/gerenciar/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
                     <p>Publicado em: {postadoEm}</p>
                 </div>
                 <div className="card-actions">
@@ -42,6 +42,37 @@ const AnuncioDashboardCard = ({ anuncio, tipo }) => {
                 </div>
             </div>
         );
+    }
+
+    // Renderiza a versão para "Confirmados"
+    if (tipo === 'confirmado') {
+        const dataConfirmacao = new Date(anuncio.data_confirmacao).toLocaleDateString('pt-BR');
+        
+        // Se o card mostrar um trabalho que EU CONSEGUI
+        if (anuncio.nome_empresa) {
+            return (
+                <div className="anuncio-dashboard-card">
+                    <div className="card-info">
+                        <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
+                        <p>Confirmado em: {dataConfirmacao} | Contratante: {anuncio.nome_empresa}</p>
+                    </div>
+                    {/* Futuramente um botão de 'Avaliar' */}
+                </div>
+            );
+        }
+
+        // Se o card mostrar um trabalho que EU PUBLIQUEI e confirmei alguém
+        if (anuncio.nome_candidato) {
+            return (
+                <div className="anuncio-dashboard-card">
+                    <div className="card-info">
+                        <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
+                        <p>Confirmado em: {dataConfirmacao} | Candidato selecionado: {anuncio.nome_candidato}</p>
+                    </div>
+                    {/* Futuramente um botão de 'Avaliar' */}
+                </div>
+            );
+        }
     }
     
     return null;
