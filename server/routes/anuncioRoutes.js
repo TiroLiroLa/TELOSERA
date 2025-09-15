@@ -83,30 +83,29 @@ router.get('/', async (req, res) => {
 // @access  Privado
 router.post('/', auth, async (req, res) => {
   const idUsuario = req.user.id;
-  // <<< 1. Recebendo a localização do frontend
   const { 
     titulo, descricao, tipo, 
-    fk_Area_id_area, fk_id_servico, localizacao,
-    fk_id_cidade // <<< NOVO CAMPO
+    fk_Area_id_area, fk_id_servico, localizacao, 
+    fk_id_cidade, 
+    data_servico // <<< NOVO CAMPO
   } = req.body;
 
-  if (!titulo || !descricao || !tipo || !fk_Area_id_area || !fk_id_servico) {
+  // Adiciona data_servico à validação
+  if (!titulo || !descricao || !tipo || !fk_Area_id_area || !fk_id_servico || !data_servico) {
     return res.status(400).json({ msg: 'Por favor, preencha todos os campos obrigatórios.' });
   }
 
   try {
-    // <<< 2. Prepara o ponto para o PostGIS
     let point = null;
-    if (localizacao) {
-      point = `POINT(${localizacao.lng} ${localizacao.lat})`;
-    }
+    if (localizacao) { point = `POINT(${localizacao.lng} ${localizacao.lat})`; }
 
     const novoAnuncio = await db.query(
-      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, true) 
+      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) 
        RETURNING *`,
-      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade]
+      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
     );
+
     res.status(201).json(novoAnuncio.rows[0]);
   } catch (err) {
     console.error(err.message);

@@ -5,12 +5,17 @@ import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal'; // <<< 1. Importar o Modal
 import LocationPicker from '../components/LocationPicker'; // <<< 2. Importar o mapa
 import CityAutocomplete from '../components/CityAutocomplete';
+import { Link } from 'react-router-dom';
+import './EditarPerfil.css'; // Importa o novo CSS
 
 const EditarPerfil = () => {
-  const { user } = useContext(AuthContext);
-  const [formData, setFormData] = useState({ nome: '', telefone: '' });
+  const { user, loading: authLoading } = useContext(AuthContext);
+  const [activeSection, setActiveSection] = useState('dados'); // 'dados', 'especialidades', 'regiao'
+  // Estados para cada formulário
+  const [dadosFormData, setDadosFormData] = useState({ nome: '', telefone: '' });
   const [todasAreas, setTodasAreas] = useState([]);
-  const [minhasAreas, setMinhasAreas] = useState(new Set()); // Usar Set para busca rápida
+  const [minhasAreas, setMinhasAreas] = useState(new Set());
+  const [regiaoData, setRegiaoData] = useState({ location: null, raio: '', estadoId: '', city: null });
   // <<< 3. Novos estados para o modal e a localização
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newLocation, setNewLocation] = useState(null);
@@ -23,22 +28,24 @@ const EditarPerfil = () => {
   useEffect(() => {
     // Preenche o formulário com os dados atuais do usuário
     if (user) {
-      setFormData({ nome: user.nome || '', telefone: user.telefone || '' });
+      setDadosFormData({ nome: user.nome || '', telefone: user.telefone || '' });
     }
 
     // Busca todas as áreas disponíveis e as áreas que o usuário já selecionou
     const fetchData = async () => {
-      try {
-        const [resTodasAreas, resMinhasAreas] = await Promise.all([
-          axios.get('/api/dados/areas'),
-          axios.get('/api/users/me/areas')
-        ]);
-        setTodasAreas(resTodasAreas.data);
-        // Converte o array de objetos para um Set de IDs
-        setMinhasAreas(new Set(resMinhasAreas.data.map(area => area.id_area)));
-      } catch (error) {
-        console.error("Erro ao carregar dados do perfil", error);
-      }
+        if (!user) return;
+        try {
+            const [resTodasAreas, resMinhasAreas, resEstados] = await Promise.all([
+                axios.get('/api/dados/areas'),
+                axios.get('/api/users/me/areas'),
+                axios.get('/api/dados/estados')
+            ]);
+            setTodasAreas(resTodasAreas.data);
+            setMinhasAreas(new Set(resMinhasAreas.data.map(area => area.id_area)));
+            setEstados(resEstados.data);
+        } catch (error) {
+            console.error("Erro ao carregar dados para edição", error);
+        }
     };
     fetchData();
 
@@ -53,8 +60,6 @@ const EditarPerfil = () => {
     };
     fetchEstados();
   }, [user]);
-
-  const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleCreateCity = async (cityName) => {
       try {
@@ -76,10 +81,13 @@ const EditarPerfil = () => {
     setMinhasAreas(newSelection);
   };
 
+  if (authLoading) return <div>Carregando...</div>;
+  if (!user) return <div>Você precisa estar logado para editar o perfil.</div>;
+
   const onDadosSubmit = async e => {
     e.preventDefault();
     try {
-      await axios.put('/api/users/me', formData);
+      await axios.put('/api/users/me', dadosFormData);
       alert('Dados atualizados com sucesso!');
       // Idealmente, o AuthContext seria atualizado aqui
     } catch (err) {
@@ -128,43 +136,81 @@ const EditarPerfil = () => {
 
 
   return (
-    <div className="container">
-      <h1>Editar Perfil</h1>
-      <form onSubmit={onDadosSubmit}>
-        <h3>Dados Básicos</h3>
-        <label>Nome:</label>
-        <input type="text" name="nome" value={formData.nome} onChange={onChange} />
-        <label>Telefone:</label>
-        <input type="tel" name="telefone" value={formData.telefone} onChange={onChange} />
-        <button type="submit">Salvar Dados</button>
-      </form>
+        <div className="edit-perfil-container">
+            <aside className="edit-perfil-sidebar">
+                <ul className="edit-perfil-nav">
+                    <li>
+                        <a href="#" 
+                           className={activeSection === 'dados' ? 'active' : ''} 
+                           onClick={(e) => { e.preventDefault(); setActiveSection('dados'); }}>
+                           Dados Básicos
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" 
+                           className={activeSection === 'especialidades' ? 'active' : ''} 
+                           onClick={(e) => { e.preventDefault(); setActiveSection('especialidades'); }}>
+                           Especialidades
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" 
+                           className={activeSection === 'regiao' ? 'active' : ''} 
+                           onClick={(e) => { e.preventDefault(); setActiveSection('regiao'); }}>
+                           Região de Atuação
+                        </a>
+                    </li>
+                </ul>
+                <Link to={`/perfil/${user.id_usuario}`} style={{marginTop: '1rem', display: 'block'}}>
+                    &larr; Voltar para o Perfil Público
+                </Link>
+            </aside>
 
-      <hr style={{margin: '2rem 0'}} />
+            <main className="edit-perfil-main">
+                {activeSection === 'dados' && (
+                    <section className="edit-section">
+                        <h2>Dados Básicos</h2>
+                        <form onSubmit={onDadosSubmit}>
+                            <div className="form-group">
+                                <label>Nome / Razão Social</label>
+                                <input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({...dadosFormData, nome: e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                                <label>Telefone</label>
+                                <input type="tel" name="telefone" value={dadosFormData.telefone} onChange={e => setDadosFormData({...dadosFormData, telefone: e.target.value})} />
+                            </div>
+                            <button type="submit" className="btn btn-primary">Salvar Alterações</button>
+                        </form>
+                    </section>
+                )}
 
-      <form onSubmit={onAreasSubmit}>
-        <h3>Minhas Especialidades</h3>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-          {todasAreas.map(area => (
-            <label key={area.id_area}>
-              <input 
-                type="checkbox"
-                checked={minhasAreas.has(area.id_area)}
-                onChange={() => handleAreaChange(area.id_area)}
-              />
-              {area.nome}
-            </label>
-          ))}
-        </div>
-        <button type="submit" style={{marginTop: '1rem'}}>Salvar Especialidades</button>
-      </form>
-      {/* <<< 4. Nova seção para Região de Atuação */}
-      <div className="regiao-edit-section">
-        <h3>Região de Atuação</h3>
-        <p>Edite sua localização base e raio de atendimento.</p>
-        <button type="button" onClick={() => setIsModalOpen(true)}>
-          Alterar Região
-        </button>
-      </div>
+                {activeSection === 'especialidades' && (
+                    <section className="edit-section">
+                        <h2>Minhas Especialidades</h2>
+                        <form onSubmit={onAreasSubmit}>
+                            <div className="especialidades-grid">
+                                {todasAreas.map(area => (
+                                    <label key={area.id_area} className="checkbox-label">
+                                        <input type="checkbox" checked={minhasAreas.has(area.id_area)} onChange={() => handleAreaChange(area.id_area)} />
+                                        {area.nome}
+                                    </label>
+                                ))}
+                            </div>
+                            <button type="submit" className="btn btn-primary" style={{marginTop: '1.5rem'}}>Salvar Especialidades</button>
+                        </form>
+                    </section>
+                )}
+
+                {activeSection === 'regiao' && (
+                    <section className="edit-section">
+                        <h2>Região de Atuação</h2>
+                        <p>Defina a cidade central, o ponto no mapa e o raio onde você atua.</p>
+        <button type="button" onClick={() => setIsModalOpen(true)} className="btn btn-secondary">
+                            Abrir Editor de Região
+                        </button>
+                    </section>
+                )}
+            </main>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <h2>Selecione sua nova região de atuação</h2>

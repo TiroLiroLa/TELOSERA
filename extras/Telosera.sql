@@ -12,6 +12,7 @@ CREATE TABLE Usuario (
     telefone varchar(15),
     identificador varchar(14) NOT NULL,
     nome varchar(255) NOT NULL,
+    foto_perfil_url VARCHAR(255),
     fk_id_ender int
 );
 
@@ -79,7 +80,7 @@ CREATE TABLE Confirmacao (
     fk_id_usuario int NOT NULL
 );
 
-CREATE TABLE Candidato_Candidata (
+CREATE TABLE Candidatura (
     data_candidatura timestamptz DEFAULT NOW(),
     fk_id_usuario int NOT NULL,
     fk_id_anuncio int NOT NULL,
@@ -290,12 +291,12 @@ ALTER TABLE Confirmacao ADD CONSTRAINT FK_Confirmacao_2
     REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
-ALTER TABLE Candidato_Candidata ADD CONSTRAINT FK_Candidato_Candidata_1
+ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_1
     FOREIGN KEY (fk_id_usuario)
     REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
-ALTER TABLE Candidato_Candidata ADD CONSTRAINT FK_Candidato_Candidata_2
+ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_2
     FOREIGN KEY (fk_id_anuncio)
     REFERENCES Anuncio (id_anuncio)
     ON DELETE CASCADE;
