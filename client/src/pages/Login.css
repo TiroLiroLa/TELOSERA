@@ -1,0 +1,115 @@
+.login-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Faz o contêiner ocupar a altura da tela, descontando a altura do header (70px) */
+    min-height: calc(100vh - 70px - 4rem); /* 4rem = margin do <main> */
+    width: 100%;
+    padding: 2rem 0; /* Espaçamento vertical para telas pequenas */
+}
+
+.login-box {
+    background-color: #fff;
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+}
+
+.login-box h2 {
+    margin-top: 0;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #fa5700;
+    box-shadow: 0 0 0 3px rgba(250, 87, 0, 0.15);
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+.btn-primary {
+    background-color: #fa5700;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #e04e00;
+}
+
+.login-footer {
+    margin-top: 2rem;
+}
+
+.login-footer p {
+    margin: 0.5rem 0;
+    color: #555;
+}
+
+.login-footer a {
+    color: #007bff;
+    font-weight: 500;
+    text-decoration: none;
+}
+.login-footer a:hover {
+    text-decoration: underline;
+}
+
+.login-footer small {
+    display: block;
+    margin-top: 1.5rem;
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.error-message {
+    background-color: #f8d7da; /* Fundo avermelhado claro */
+    color: #721c24; /* Texto vermelho escuro */
+    border: 1px solid #f5c6cb; /* Borda vermelha clara */
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem; /* Espaçamento antes dos campos de input */
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9rem;
+}

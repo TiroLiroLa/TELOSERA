@@ -1,0 +1,33 @@
+.tabs-nav {
+    display: flex;
+    list-style-type: none;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
+    border-bottom: 2px solid #ddd;
+}
+
+.tabs-nav li {
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px; /* Alinha a borda inferior com a borda do contêiner */
+    transition: all 0.2s;
+}
+
+.tabs-nav li a {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+}
+
+.tabs-nav li.active {
+    border-bottom-color: #fa5700;
+}
+
+.tabs-nav li.active a {
+    color: #fa5700;
+}
+
+.tab-content {
+    padding-top: 1rem;
+}

@@ -10,7 +10,7 @@ CREATE TABLE Usuario (
     ultimo_login timestamptz,
     ativo bool DEFAULT true,
     telefone varchar(15),
-    cpf varchar(11) NOT NULL,
+    identificador varchar(14) NOT NULL,
     nome varchar(255) NOT NULL,
     fk_id_ender int
 );
@@ -150,7 +150,7 @@ CREATE TABLE Cidade (
 
 ALTER TABLE Usuario
     ADD CONSTRAINT uq_usuario_email UNIQUE (email),
-    ADD CONSTRAINT uq_usuario_cpf UNIQUE (cpf),
+    ADD CONSTRAINT uq_usuari_identificador UNIQUE (identificador),
     ADD CONSTRAINT ck_tipo_usuario CHECK (tipo_usuario IN ('P', 'E')),
     ADD CONSTRAINT ck_formato_email CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$');
 
