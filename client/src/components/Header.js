@@ -7,7 +7,6 @@ import searchIcon from '../assets/icon.png'; // <<< 1. Importe a imagem
 
 const Header = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
-    const navigate = useNavigate();
 
     return (
         <header className="main-header">
@@ -34,11 +33,11 @@ const Header = () => {
                     {isAuthenticated ? (
                         <>
                             <Link to="/dashboard" className="nav-link">Meus Anúncios</Link>
-                            <div className="avatar-menu" onClick={() => navigate('/perfil/editar')}>
+                            <Link to={`/perfil/${user?.id_usuario}`} className="avatar-menu">
                                 <div className="avatar-placeholder">
                                     {user ? user.nome.charAt(0).toUpperCase() : '?'}
                                 </div>
-                            </div>
+                            </Link>
                         </>
                     ) : (
                         <>

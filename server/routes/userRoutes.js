@@ -29,13 +29,12 @@ router.get('/me', auth, async (req, res) => {
 // Rota GET /api/users/:id (Perfil Público) - VERSÃO CORRIGIDA COM ST_AsText
 router.get('/:id', async (req, res) => {
     try {
-        const query = `
+        // Query para os dados principais do perfil
+        const perfilQuery = `
             SELECT 
-                u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro,
-                c.nome as cidade,
-                e.uf as estado,
-                ST_AsText(r.local) as localizacao,
-                r.raio
+                u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro, u.telefone,
+                c.nome as cidade, e.uf as estado,
+                ST_AsText(r.local) as localizacao, r.raio
             FROM Usuario u
             LEFT JOIN Atua a ON u.id_usuario = a.fk_id_usuario
             LEFT JOIN Regiao_atuacao r ON a.fk_id_regiao = r.id_regiao
@@ -43,13 +42,32 @@ router.get('/:id', async (req, res) => {
             LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
             WHERE u.id_usuario = $1;
         `;
-        const result = await db.query(query, [req.params.id]);
+        const perfilResult = await db.query(perfilQuery, [req.params.id]);
         
-        if (result.rows.length === 0) {
+        if (perfilResult.rows.length === 0) {
             return res.status(404).json({ msg: "Usuário não encontrado." });
         }
+
+        // Query separada para buscar as especialidades (áreas de atuação)
+        const areasQuery = `
+            SELECT area.id_area, area.nome FROM Usuario_area ua
+            JOIN Area_atuacao area ON ua.fk_id_area = area.id_area
+            WHERE ua.fk_id_usuario = $1;
+        `;
+        const areasResult = await db.query(areasQuery, [req.params.id]);
         
-        res.json(result.rows[0]);
+        // Query separada para buscar os anúncios publicados pelo usuário
+        const anunciosQuery = `SELECT id_anuncio, titulo, descricao, tipo FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC LIMIT 5`;
+        const anunciosResult = await db.query(anunciosQuery, [req.params.id]);
+
+        // Combina todos os resultados em um único objeto JSON
+        const perfilCompleto = {
+            ...perfilResult.rows[0],
+            especialidades: areasResult.rows,
+            anuncios: anunciosResult.rows
+        };
+        
+        res.json(perfilCompleto);
 
     } catch (err) {
         console.error(err.message);
