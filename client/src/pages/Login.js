@@ -1,21 +1,22 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { Link } from 'react-router-dom'; // Adicionar Link
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' });
-  const { login } = useContext(AuthContext); // Pega a função login do contexto
+  const { login } = useContext(AuthContext); // Pega a funÃ§ao login do contexto
 
   const { email, senha } = formData;
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const onSubmit = async e => {
     e.preventDefault();
-    const success = await login(email, senha); // Chama a função de login do contexto
+    const success = await login(email, senha); // Chama a funÃ§ao de login do contexto
     if (success) {
       alert('Login realizado com sucesso!');
-      // O redirecionamento agora é feito no App.js
+      // O redirecionamento agora e feito no App.js
     } else {
-      alert('Erro no login: Credenciais inválidas.');
+      alert('Erro no login: Credenciais invÃ¡lidas.');
     }
   };
 
@@ -32,6 +33,10 @@ const Login = () => {
         </div>
         <input type="submit" value="Login" />
       </form>
+      <div></div>
+      <Link to={`/cadastro`}>
+        <p>NÃ£o possui conta?</p>
+      </Link>
     </div>
   );
 };

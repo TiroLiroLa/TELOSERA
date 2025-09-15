@@ -1,150 +1,168 @@
-// client/src/pages/Cadastro.js
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import LocationPicker from '../components/LocationPicker';
+import Modal from '../components/Modal'; // <<< Importar Modal
+import CityAutocomplete from '../components/CityAutocomplete';
 
-// Componente funcional para a p·gina de cadastro
 const Cadastro = () => {
-  // O hook useState gerencia o estado do formul·rio.
-  // 'formData' È um objeto que guarda todos os valores dos campos.
-  // 'setFormData' È a funÁ„o que usamos para atualizar esses valores.
   const [formData, setFormData] = useState({
-    nome: '',
-    email: '',
-    senha: '',
-    confirmarSenha: '',
-    cpf: '',
-    tipo_usuario: 'P', // 'P' para Prestador, 'E' para Empresa
+    nome: '', email: '', senha: '', confirmarSenha: '', cpf: '',
+    tipo_usuario: 'P', telefone: '', rua: '', numero: '',
+    complemento: '', cidade: '', estado: '', cep: '',
+    raio_atuacao: '', // <<< Adicionado ao estado principal
   });
+  
+  // Estado separado para a localiza√ß√£o (latitude e longitude)
+  const [location, setLocation] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false); // <<< Estado para o modal
+  const [estados, setEstados] = useState([]);
+  const [selectedEstadoId, setSelectedEstadoId] = useState('');
+  const [selectedCity, setSelectedCity] = useState(null); // Objeto {id_cidade, nome}
 
-  // Desestruturando as vari·veis do estado para facilitar o uso no JSX
-  const { nome, email, senha, confirmarSenha, cpf, tipo_usuario } = formData;
-
-  // FunÁ„o 'onChange' que È chamada toda vez que o usu·rio digita em um campo.
-  // Ela atualiza o estado 'formData' com o novo valor.
   const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  // FunÁ„o 'onSubmit' que È chamada quando o formul·rio È enviado.
-  const onSubmit = async e => {
-    e.preventDefault(); // Impede o recarregamento da p·gina
+  // <<< FUN√á√ÉO CHAMADA AO CLICAR NO MAPA
+  const onLocationSelect = (latlng) => {
+    setLocation(latlng);
+  };
 
-    // ValidaÁ„o simples para verificar se as senhas coincidem
-    if (senha !== confirmarSenha) {
-      alert('As senhas n„o coincidem!');
+  // <<< 2. useEffect para buscar os estados da API quando o componente montar
+  useEffect(() => {
+      const fetchEstados = async () => {
+          try {
+              const res = await axios.get('/api/dados/estados');
+              setEstados(res.data);
+          } catch (err) {
+              console.error("Erro ao buscar estados", err);
+          }
+      };
+      fetchEstados();
+  }, []); // Array vazio garante que rode apenas uma vez
+    
+  const handleCreateCity = async (cityName) => {
+      try {
+          const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: selectedEstadoId });
+          return res.data; // Retorna o objeto da nova cidade {id_cidade, nome}
+      } catch (error) {
+          alert("Erro ao criar nova cidade.");
+          return null;
+      }
+  };
+
+  const handleConfirmLocation = () => {
+    if (!location) {
+      alert("Por favor, clique no mapa para selecionar sua localiza√ß√£o.");
       return;
     }
+    setIsModalOpen(false); // Fecha o modal e mant√©m a localiza√ß√£o salva
+  };
+
+  const onSubmit = async e => {
+    e.preventDefault();
+    if (formData.senha !== formData.confirmarSenha) {
+      return alert('As senhas n√£o coincidem!');
+    }
+    
+    const dadosParaEnviar = { ...formData, localizacao: location, fk_id_cidade: selectedCity?.id_cidade};
 
     try {
-      // Cria o objeto com os dados a serem enviados para a API
-      const novoUsuario = {
-        nome,
-        email,
-        senha,
-        cpf,
-        tipo_usuario,
-      };
-
-      // ConfiguraÁ„o para a requisiÁ„o POST
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      };
-
-      // Converte o objeto JavaScript para uma string JSON
-      const body = JSON.stringify(novoUsuario);
-
-      // Faz a requisiÁ„o POST para a nossa API backend
-      // A URL completa È http://localhost:3001/api/users/register
-      const res = await axios.post('/api/users/register', body, config);
-
-      console.log(res.data); // Exibe a resposta da API no console
+      await axios.post('/api/users/register', dadosParaEnviar);
       alert('Cadastro realizado com sucesso!');
-      // Aqui vocÍ poderia redirecionar o usu·rio para a p·gina de login
-
     } catch (err) {
-      console.error(err.response.data);
-      alert(`Erro no cadastro: ${err.response.data.msg}`);
+      alert(`Erro no cadastro: ${err.response?.data?.msg || err.message}`);
     }
   };
 
-  // JSX: A estrutura HTML do nosso componente
   return (
-    <div className="container">
+    <div className="container" style={{maxWidth: '700px', margin: 'auto'}}>
       <h1>Cadastre-se</h1>
-      <p>Crie sua conta no TELOSERA</p>
       <form onSubmit={onSubmit}>
-        <div>
-          <input
-            type="text"
-            placeholder="Nome Completo"
-            name="nome"
-            value={nome}
-            onChange={onChange}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="email"
-            placeholder="EndereÁo de E-mail"
-            name="email"
-            value={email}
-            onChange={onChange}
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Senha"
-            name="senha"
-            value={senha}
-            onChange={onChange}
-            minLength="6"
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="password"
-            placeholder="Confirme a Senha"
-            name="confirmarSenha"
-            value={confirmarSenha}
-            onChange={onChange}
-            minLength="6"
-            required
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            placeholder="CPF"
-            name="cpf"
-            value={cpf}
-            onChange={onChange}
-            required
-          />
-        </div>
+        <input type="text" placeholder="Nome" name="nome" value={formData.nome} onChange={onChange} required />
+        <input type="email" placeholder="Email" name="email" value={formData.email} onChange={onChange} required />
+        <input type="password" placeholder="Senha" name="senha" value={formData.senha} onChange={onChange} required />
+        <input type="password" placeholder="Confirmar Senha" name="confirmarSenha" value={formData.confirmarSenha} onChange={onChange} required />
+        <input type="text" placeholder="CPF" name="cpf" value={formData.cpf} onChange={onChange} required />
+        <input type="tel" placeholder="Telefone (opcional)" name="telefone" value={formData.telefone} onChange={onChange} />
+        
+        <h3>Endere√ßo</h3>
+        <input type="text" placeholder="Rua" name="rua" value={formData.rua} onChange={onChange} />
+        <input type="text" placeholder="N√∫mero" name="numero" value={formData.numero} onChange={onChange} />
+        <input type="text" placeholder="Complemento" name="complemento" value={formData.complemento} onChange={onChange} />
+        <input type="text" placeholder="Cidade" name="cidade" value={formData.cidade} onChange={onChange} />
+        <input type="text" placeholder="Estado (UF)" name="estado" value={formData.estado} onChange={onChange} maxLength="2" />
+        <input type="text" placeholder="CEP" name="cep" value={formData.cep} onChange={onChange} />
+
         <div>
           <p>Tipo de Conta:</p>
-          <input
-            type="radio"
-            name="tipo_usuario"
-            value="P"
-            checked={tipo_usuario === 'P'}
-            onChange={onChange}
-          /> Prestador de ServiÁo
-          <input
-            type="radio"
-            name="tipo_usuario"
-            value="E"
-            checked={tipo_usuario === 'E'}
-            onChange={onChange}
-          /> Empresa
+          <label>
+            <input type="radio" name="tipo_usuario" value="P" checked={formData.tipo_usuario === 'P'} onChange={onChange} /> Prestador
+          </label>
+          <label>
+            <input type="radio" name="tipo_usuario" value="E" checked={formData.tipo_usuario === 'E'} onChange={onChange} /> Empresa
+          </label>
         </div>
+
+        <div className="regiao-section">
+          <h3>Sua Localiza√ß√£o Base de Atua√ß√£o</h3>
+          {/* Mostra a localiza√ß√£o selecionada ou um prompt para o usu√°rio */}
+          {location ? (
+            <p>Localiza√ß√£o definida: {location.lat.toFixed(4)}, {location.lng.toFixed(4)}</p>
+          ) : (
+            <p>Nenhuma localiza√ß√£o selecionada.</p>
+          )}
+          <button type="button" onClick={() => setIsModalOpen(true)}>
+            Definir Localiza√ß√£o e Raio
+          </button>
+        </div>
+
         <input type="submit" value="Registrar" />
       </form>
+
+      {/* Modal para o mapa no cadastro */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+          <h2>Defina sua Localiza√ß√£o e Raio</h2>
+          <LocationPicker 
+            onLocationSelect={onLocationSelect} 
+            initialPosition={location}
+            radiusKm={formData.raio_atuacao}
+          />
+          {/* <<< 3. C√≥digo completo do seletor de estados */}
+          <select 
+              value={selectedEstadoId} 
+              onChange={e => {
+                  setSelectedEstadoId(e.target.value);
+                  setSelectedCity(null); // Reseta a cidade ao trocar de estado
+              }}
+              required
+          >
+              <option value="">-- Selecione um Estado --</option>
+              {estados.map(estado => (
+                  <option key={estado.id_estado} value={estado.id_estado}>
+                      {estado.nome} ({estado.uf})
+                  </option>
+              ))}
+          </select>
+          <CityAutocomplete 
+              estadoId={selectedEstadoId} 
+              onCitySelect={setSelectedCity}
+              onCityCreate={handleCreateCity}
+              selectedCity={selectedCity} // <<< A prop mudou para 'selectedCity'
+          />
+          {selectedCity && <p>Cidade selecionada: <strong>{selectedCity.nome}</strong></p>}
+          <label>
+            Raio de Atua√ß√£o (em km):
+            <input 
+              type="number" 
+              placeholder="Ex: 50" 
+              name="raio_atuacao"
+              value={formData.raio_atuacao}
+              onChange={onChange}
+            />
+          </label>
+          <button type="button" onClick={handleConfirmLocation} style={{marginTop: '1rem'}}>
+            Confirmar Localiza√ß√£o
+          </button>
+      </Modal>
     </div>
   );
 };

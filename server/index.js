@@ -1,32 +1,27 @@
-// Importa as dependências
+// Importa as dependï¿½ncias
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
-
-// Configura a conexão com o banco de dados
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
 
 // Inicializa o aplicativo Express
 const app = express();
 
 // Middlewares
-app.use(cors()); // Permite requisições de outras origens
-app.use(express.json()); // Habilita o parsing de JSON no corpo das requisições
+app.use(cors()); // Permite requisiï¿½ï¿½es de outras origens
+app.use(express.json()); // Habilita o parsing de JSON no corpo das requisiï¿½ï¿½es
 
 // Rota de teste
 app.get('/', (req, res) => {
-  res.send('API do TELOSERA está funcionando!');
+  res.send('API do TELOSERA estÃ¡ funcionando!');
 });
 
-// Usar rotas de usuário
+// Usar rotas de usuï¿½rio
 app.use('/api/users', require('./routes/userRoutes')); // Nova linha
+
+// Usar rotas de anï¿½ncios
+app.use('/api/anuncios', require('./routes/anuncioRoutes')); // <<< NOVA LINHA
+
+app.use('/api/dados', require('./routes/dadosRoutes')); // <<< NOVA LINHA
 
 // Define a porta do servidor
 const PORT = process.env.PORT || 3001;

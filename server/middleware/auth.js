@@ -1,25 +1,25 @@
 const jwt = require('jsonwebtoken');
 
 module.exports = function(req, res, next) {
-  // 1. Obter o token do header da requisição
+  // 1. Obter o token do header da requisiï¿½ï¿½o
   const token = req.header('x-auth-token');
 
-  // 2. Verificar se não há token
+  // 2. Verificar se nï¿½o hï¿½ token
   if (!token) {
-    return res.status(401).json({ msg: 'Nenhum token, autorização negada' });
+    return res.status(401).json({ msg: 'Nenhum token, autorizaÃ§Ã£o negada' });
   }
 
-  // 3. Verificar se o token é válido
+  // 3. Verificar se o token ï¿½ vï¿½lido
   try {
-    // jwt.verify() decodifica o token. Se for inválido (assinatura errada ou expirado), ele vai gerar um erro.
+    // jwt.verify() decodifica o token. Se for invï¿½lido (assinatura errada ou expirado), ele vai gerar um erro.
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Adiciona o payload do usuário (que contém o ID) ao objeto da requisição
+    // Adiciona o payload do usuï¿½rio (que contï¿½m o ID) ao objeto da requisiï¿½ï¿½o
     req.user = decoded.user;
     
-    // Passa para a próxima etapa (a rota que o usuário quer acessar)
+    // Passa para a prï¿½xima etapa (a rota que o usuï¿½rio quer acessar)
     next();
   } catch (err) {
-    res.status(401).json({ msg: 'Token não é válido' });
+    res.status(401).json({ msg: 'Token nÃ£o Ã© vÃ¡lido' });
   }
 };

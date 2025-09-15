@@ -1,0 +1,57 @@
+/* client/src/components/CityAutocomplete.css */
+
+.autocomplete-container {
+    position: relative;
+    width: 100%;
+}
+
+.autocomplete-container input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%; /* Posiciona a lista logo abaixo do input */
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1010; /* Deve ficar acima de outros elementos, mas abaixo do modal */
+}
+
+.suggestions-list li {
+    padding: 0.8rem;
+    cursor: pointer;
+}
+
+.suggestions-list li:hover {
+    background-color: #f0f0f0;
+}
+
+.create-city-btn {
+    width: 100%;
+    padding: 0.8rem;
+    background-color: #28a745; /* Verde */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 5px;
+    text-align: left;
+}
+
+.create-city-btn:hover {
+    background-color: #218838;
+}
