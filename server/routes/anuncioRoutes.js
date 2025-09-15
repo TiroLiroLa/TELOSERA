@@ -27,23 +27,30 @@ router.get('/:id', async (req, res) => {
         const idAnuncio = req.params.id;
         const query = `
             SELECT 
-                a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
+                a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
+                -- A CORREÇÃO ESTÁ AQUI: Renomeando o campo para 'localizacao'
+                ST_AsText(a.local) as localizacao,
                 u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
                 area.nome as nome_area,
-                serv.nome as nome_servico
+                serv.nome as nome_servico,
+                c.nome as nome_cidade,
+                e.uf as uf_estado
             FROM Anuncio a
             JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
             JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
             JOIN Servico serv ON a.fk_id_servico = serv.id_servico
+            LEFT JOIN Cidade c ON a.fk_id_cidade = c.id_cidade
+            LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
             WHERE a.id_anuncio = $1 AND a.status = true;
         `;
         const result = await db.query(query, [idAnuncio]);
-
+        
         if (result.rows.length === 0) {
             return res.status(404).json({ msg: 'Anúncio não encontrado.' });
         }
 
         res.json(result.rows[0]);
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erro no servidor');

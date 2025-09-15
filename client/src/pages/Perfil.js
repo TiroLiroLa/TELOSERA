@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import StaticMap from '../components/StaticMap'; // <<< 1. Importar o novo componente
 import '../components/Styles.css'; // Importe seu arquivo CSS
@@ -8,7 +8,8 @@ import { AuthContext } from '../context/AuthContext'; // Para saber se somos o d
 
 const Perfil = () => {
   const { id } = useParams(); // Pega o ID da URL
-  const { user, isAuthenticated } = useContext(AuthContext); // Pega o usuário logado
+  const { user, isAuthenticated, logout } = useContext(AuthContext); 
+  const navigate = useNavigate();
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,6 +27,11 @@ const Perfil = () => {
     };
     fetchPerfil();
   }, [id]);
+
+  const handleLogout = () => {
+    logout(); // Limpa o estado de autenticação
+    navigate('/'); // Redireciona o usuário para a página inicial
+  };
 
   if (loading) return <div className="container">Carregando perfil...</div>;
   if (!perfil) return <div className="container">Perfil não encontrado.</div>;
@@ -45,9 +51,15 @@ const Perfil = () => {
         
         {/* Botão de Editar só aparece para o dono */}
         {isOwner && (
-            <Link to="/perfil/editar" className="btn btn-primary edit-profile-btn">
+          <div className="owner-actions"> {/* Contêiner para os botões */}
+            <Link to="/perfil/editar" className="btn-secondary2 edit-profile-btn">
                 Editar Perfil
             </Link>
+            {/* <<< 4. Adicionar o botão de Sair */}
+            <button onClick={handleLogout} className="btn-secondary logout-btn">
+                Sair
+            </button>
+          </div>
         )}
       </aside>
 

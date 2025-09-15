@@ -1,54 +1,82 @@
-.anuncio-detalhe-container {
+.anuncio-detalhe-page {
     display: flex;
-    max-width: 1100px;
-    margin: 2rem auto;
     gap: 2rem;
     align-items: flex-start;
 }
 
-.anuncio-main-content {
-    flex: 3; /* Ocupa 3/4 do espaço */
+.anuncio-main {
+    flex: 3; /* Ocupa a maior parte do espaÃ§o */
 }
 
-.anuncio-sidebar {
-    flex: 1; /* Ocupa 1/4 do espaço */
-    position: sticky; /* Fica fixo ao rolar a página */
-    top: 2rem;
-}
-
-.image-gallery-placeholder {
-    display: flex;
-    gap: 1rem;
-    margin: 1.5rem 0;
-}
-
-.placeholder-box {
-    flex: 1;
-    height: 120px;
-    background-color: #e0e0e0;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    color: #888;
-}
-
-.anuncio-main-content h1 {
+.anuncio-header h1 {
+    font-size: 2.5rem;
     margin-top: 0;
+    margin-bottom: 0.5rem;
 }
 
-.anuncio-main-content h2 {
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 0.5rem;
-    margin-top: 2rem;
+.anuncio-subheader {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.anuncio-subheader a {
+    color: #007bff;
+    text-decoration: none;
+}
+.anuncio-subheader a:hover {
+    text-decoration: underline;
+}
+
+.anuncio-section {
+    background-color: #fff;
+    padding: 1.5rem 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 2rem;
+}
+
+.anuncio-section h2 {
+    margin-top: 0;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.details-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas */
+    gap: 1rem;
+}
+
+.details-list li {
+    background-color: #f8f9fa;
+    padding: 0.8rem;
+    border-radius: 5px;
+}
+
+.details-list li strong {
+    display: block;
+    color: #555;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Sidebar */
+.anuncio-sidebar {
+    flex: 1;
+    min-width: 300px;
+    position: sticky;
+    top: calc(70px + 2rem); /* Altura do Header + margem do main */
 }
 
 .info-box {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
+    background-color: #fff;
     border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     padding: 1.5rem;
+    text-align: center;
     margin-bottom: 1.5rem;
 }
 
@@ -56,30 +84,44 @@
     margin-top: 0;
 }
 
-.profile-button {
-    width: 100%;
-    padding: 0.8rem;
-    margin-top: 1rem;
-    background-color: #28a745;
+.profile-avatar-small {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #fa5700;
     color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 2.5rem;
+    margin: 0 auto 1rem auto;
 }
 
-.profile-button:hover {
-    background-color: #218838;
+.btn-contact {
+    width: 100%;
+    margin-top: 1rem;
 }
 
-.stars-placeholder {
-    font-size: 1.2rem;
-    color: #ffc107;
+.anuncio-subheader a {
+    font-weight: 500;
 }
 
-.error-message {
-    color: #dc3545;
-    font-size: 1.2rem;
+.contact-details {
+    text-align: left;
+    margin: 1.5rem 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+}
+
+.contact-details h4 {
+    margin-top: 0;
+    margin-bottom: 0.8rem;
     text-align: center;
-    margin-top: 3rem;
+}
+
+.contact-details p {
+    margin: 0.4rem 0;
+    font-size: 0.9rem;
+    word-break: break-all; /* Garante que emails longos nÃ£o quebrem o layout */
 }

@@ -41,7 +41,6 @@
 }
 
 .edit-profile-btn {
-    width: 100%;
     margin-top: 1.5rem;
     padding: 0.8rem;
 }
@@ -89,4 +88,48 @@
 }
 .anuncios-perfil-lista .anuncio-item:last-child {
     margin-bottom: 0;
+}
+
+/* Novo contêiner para os botões na sidebar */
+.owner-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Espaçamento entre os botões */
+}
+
+/* Estilo para botões secundários */
+.btn-secondary {
+    padding: 0.8rem;
+    background-color: #6c757d; /* Cinza */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btn-secondary2 {
+    padding: 0.8rem;
+    background-color: #fa5700; /* Cinza */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+/* Nova classe modificadora para largura total */
+.btn-block {
+    width: 100%;
+    display: block; /* Garante que o Link se comporte como um bloco */
+    text-align: center; /* Centraliza o texto se necessário */
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
 }
