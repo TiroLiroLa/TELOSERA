@@ -13,6 +13,7 @@ import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo compo
 import Perfil from './pages/Perfil';
 import EditarPerfil from './pages/EditarPerfil';
 import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
+import Header from './components/Header';
 
 // Componente para o Painel de Controle (Dashboard)
 const Dashboard = () => {
@@ -87,27 +88,12 @@ const AppContent = () => {
     }
     
     return (
+
+         
+
         <Router>
             <div className="App">
-                <header className="main-header">
-                    <Link to="/" className="logo">TELOSERA</Link>
-                    <nav>
-                        {/* 1. Link agora está fora da verificação de 'isAuthenticated' */}
-                        <Link to="/anuncios/criar">Publicar Anúncio</Link>
-
-                        {isAuthenticated ? (
-                            <>
-                                {/* O link "Publicar Anúncio" foi removido daqui */}
-                                <Link to="/dashboard">Meu Painel</Link>
-                            </>
-                        ) : (
-                            <>
-                                <Link to="/login">Login</Link>
-                                <Link to="/cadastro">Cadastre-se</Link>
-                            </>
-                        )}
-                    </nav>
-                </header>
+                <Header /> {/* <<< Usa o componente Header reutilizável */}
                 <main>
                     {/* A lógica de proteção de rotas aqui dentro permanece a mesma.
                         Ela é a responsável por redirecionar o usuário. */}
