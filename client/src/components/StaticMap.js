@@ -1,44 +1,59 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Circle } from 'react-leaflet';
 
-// <<< NOVA FUNÇÃO: Calcula o nível de zoom a partir do raio em km
+// Função para extrair latitude e longitude da string 'POINT(lng lat)' do PostGIS
+const parseLocation = (locationString) => {
+    if (!locationString || typeof locationString !== 'string') return null;
+    const coordsMatch = locationString.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
+    if (!coordsMatch || coordsMatch.length < 3) return null;
+    
+    // coordsMatch[1] é a longitude, coordsMatch[2] é a latitude
+    return [parseFloat(coordsMatch[2]), parseFloat(coordsMatch[1])]; 
+};
+
+// Função para calcular o nível de zoom a partir do raio em km
 const getZoomLevel = (radiusKm) => {
-    // Esta é uma aproximação logarítmica. Os valores foram ajustados por tentativa e erro.
-    // Quanto maior o raio, menor o nível de zoom.
     if (radiusKm <= 1) return 15;
     if (radiusKm <= 5) return 13;
     if (radiusKm <= 10) return 12;
     if (radiusKm <= 50) return 10;
     if (radiusKm <= 100) return 9;
     if (radiusKm <= 500) return 7;
-    return 6; // Para raios muito grandes
-};
-
-// Função para extrair latitude e longitude da string 'POINT(lng lat)' do PostGIS
-const parseLocation = (locationString) => {
-    if (!locationString) return null;
-    const coords = locationString.replace('POINT(', '').replace(')', '').split(' ');
-    // Retorna no formato [latitude, longitude] que o Leaflet espera
-    return [parseFloat(coords[1]), parseFloat(coords[0])]; 
+    return 6;
 };
 
 const StaticMap = ({ location, raio }) => {
     const position = parseLocation(location);
 
+    // <<< A CORREÇÃO ESTÁ AQUI (GUARD CLAUSE) >>>
+    // Se não conseguimos calcular uma posição válida, renderizamos uma mensagem
+    // e paramos a execução do componente aqui.
     if (!position) {
-        return <div>Localização não disponível.</div>;
+        return (
+            <div style={{ 
+                height: '250px', 
+                width: '100%', 
+                backgroundColor: '#f0f0f0', 
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                color: '#888'
+            }}>
+                Localização não definida.
+            </div>
+        );
     }
 
-    // O raio no Leaflet Circle é em metros, então convertemos de km para m
+    // Este código abaixo só será executado se a 'position' for um array de números válido.
     const radiusInMeters = raio * 1000;
-
     const dynamicZoom = getZoomLevel(raio);
 
     return (
         <div style={{ height: '250px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
             <MapContainer 
                 center={position} 
-                zoom={dynamicZoom} // <<< Usa a variável de zoom dinâmico
+                zoom={dynamicZoom} 
                 style={{ height: '100%', width: '100%' }}
                 scrollWheelZoom={false}
                 dragging={false}

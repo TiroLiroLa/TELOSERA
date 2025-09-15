@@ -26,19 +26,21 @@ router.get('/me', auth, async (req, res) => {
 // @route   GET /api/users/:id
 // @desc    Buscar perfil público de um usuário
 // @access  Público
+// Rota GET /api/users/:id (Perfil Público) - VERSÃO CORRIGIDA COM ST_AsText
 router.get('/:id', async (req, res) => {
     try {
         const query = `
             SELECT 
                 u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro,
-                e.cidade, e.estado,
-                -- Adiciona os dados da região
-                ST_AsText(r.local) as localizacao, r.raio
+                c.nome as cidade,
+                e.uf as estado,
+                ST_AsText(r.local) as localizacao,
+                r.raio
             FROM Usuario u
-            LEFT JOIN Endereco e ON u.fk_id_ender = e.id_ender
-            -- Junta com 'Atua' e depois com 'Regiao_atuacao'
             LEFT JOIN Atua a ON u.id_usuario = a.fk_id_usuario
             LEFT JOIN Regiao_atuacao r ON a.fk_id_regiao = r.id_regiao
+            LEFT JOIN Cidade c ON r.fk_id_cidade = c.id_cidade
+            LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
             WHERE u.id_usuario = $1;
         `;
         const result = await db.query(query, [req.params.id]);
@@ -59,7 +61,7 @@ router.get('/:id', async (req, res) => {
 // @desc    Atualizar a região de atuação do usuário logado
 // @access  Privado
 router.put('/me/regiao', auth, async (req, res) => {
-    const { localizacao, raio_atuacao } = req.body;
+    const { localizacao, raio_atuacao, fk_id_cidade } = req.body;
     const idUsuario = req.user.id;
 
     if (!localizacao || !raio_atuacao) {
@@ -79,14 +81,14 @@ router.put('/me/regiao', auth, async (req, res) => {
             // Se o usuário JÁ TEM uma região, atualiza-a (UPDATE)
             const idRegiao = atuaResult.rows[0].fk_id_regiao;
             await client.query(
-                'UPDATE Regiao_atuacao SET local = ST_GeomFromText($1, 4326), raio = $2 WHERE id_regiao = $3',
-                [point, raio_atuacao, idRegiao]
+                'UPDATE Regiao_atuacao SET local = ST_GeomFromText($1, 4326), raio = $2, fk_id_cidade = $3 WHERE id_regiao = $4',
+                [point, raio_atuacao, fk_id_cidade, idRegiao] // Adiciona fk_id_cidade
             );
         } else {
             // Se o usuário NÃO TEM uma região, cria uma nova (INSERT) e a associa
             const regiaoResult = await client.query(
-                'INSERT INTO Regiao_atuacao (local, raio) VALUES (ST_GeomFromText($1, 4326), $2) RETURNING id_regiao',
-                [point, raio_atuacao]
+                'INSERT INTO Regiao_atuacao (local, raio, fk_id_cidade) VALUES (ST_GeomFromText($1, 4326), $2, $3) RETURNING id_regiao',
+                [point, raio_atuacao, fk_id_cidade] // Adiciona fk_id_cidade
             );
             const idRegiao = regiaoResult.rows[0].id_regiao;
             
@@ -237,6 +239,7 @@ router.post('/register', async (req, res) => {
     const { 
         nome, email, senha, tipo_usuario, cpf, telefone,
         rua, numero, complemento, cidade, estado, cep,
+        fk_id_cidade, // <<< NOVO CAMPO
         // <<< 1. Recebendo os novos dados do frontend
         localizacao, // Deverá ser um objeto { lat, lng }
         raio_atuacao // Deverá ser um número
@@ -260,10 +263,10 @@ router.post('/register', async (req, res) => {
         }
 
         let idEndereco = null;
-        if (rua && cidade && estado && cep) {
+        if (rua && cep && fk_id_cidade) {
             const enderecoResult = await client.query(
-                'INSERT INTO Endereco (rua, numero, complemento, cidade, estado, cep) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id_ender',
-                [rua, numero, complemento, cidade, estado, cep]
+                'INSERT INTO Endereco (rua, numero, complemento, cep, fk_id_cidade) VALUES ($1, $2, $3, $4, $5) RETURNING id_ender',
+                [rua, numero, complemento, cep, fk_id_cidade]
             );
             idEndereco = enderecoResult.rows[0].id_ender;
         }
@@ -278,14 +281,11 @@ router.post('/register', async (req, res) => {
 
         // --- LÓGICA PARA REGIÃO DE ATUAÇÃO ---
         // <<< 2. Adicionando a nova lógica
-        if (localizacao && raio_atuacao) {
-            // Insere a localização e raio na tabela Regiao_atuacao
-            // O PostGIS espera um formato específico para pontos: 'POINT(longitude latitude)'
+        if (localizacao && raio_atuacao && fk_id_cidade) { // Adiciona fk_id_cidade à condição
             const point = `POINT(${localizacao.lng} ${localizacao.lat})`;
-            
             const regiaoResult = await client.query(
-                'INSERT INTO Regiao_atuacao (local, raio) VALUES (ST_GeomFromText($1, 4326), $2) RETURNING id_regiao',
-                [point, raio_atuacao]
+                'INSERT INTO Regiao_atuacao (local, raio, fk_id_cidade) VALUES (ST_GeomFromText($1, 4326), $2, $3) RETURNING id_regiao',
+                [point, raio_atuacao, fk_id_cidade] // Adiciona fk_id_cidade
             );
             const idRegiao = regiaoResult.rows[0].id_regiao;
 

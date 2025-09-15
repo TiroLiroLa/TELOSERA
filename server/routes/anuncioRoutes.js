@@ -86,7 +86,8 @@ router.post('/', auth, async (req, res) => {
   // <<< 1. Recebendo a localização do frontend
   const { 
     titulo, descricao, tipo, 
-    fk_Area_id_area, fk_id_servico, localizacao 
+    fk_Area_id_area, fk_id_servico, localizacao,
+    fk_id_cidade // <<< NOVO CAMPO
   } = req.body;
 
   if (!titulo || !descricao || !tipo || !fk_Area_id_area || !fk_id_servico) {
@@ -101,12 +102,11 @@ router.post('/', auth, async (req, res) => {
     }
 
     const novoAnuncio = await db.query(
-      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), true) 
+      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, status) 
+       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, true) 
        RETURNING *`,
-      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point]
+      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade]
     );
-
     res.status(201).json(novoAnuncio.rows[0]);
   } catch (err) {
     console.error(err.message);

@@ -45,7 +45,7 @@ const Perfil = () => {
       {perfil.localizacao && perfil.raio && (
         <div className="perfil-regiao" style={{ marginTop: '2rem' }}>
           <h4>Região de Atuação</h4>
-          <p>Atende em um raio de <strong>{perfil.raio} km</strong> a partir do ponto central exibido no mapa abaixo.</p>
+          <p>Atende em um raio de <strong>{perfil.raio} km</strong> a partir da cidade: {perfil.cidade}, {perfil.estado}.</p>
           
           {/* <<< Contêiner para controlar o tamanho do mapa */}
           <div style={{ maxWidth: '500px', margin: '1rem auto' }}> 
