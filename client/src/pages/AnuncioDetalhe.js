@@ -7,28 +7,93 @@ import Modal from '../components/Modal'; // Para o mapa
 import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
 
 const AnuncioDetalhe = () => {
-    const { id } = useParams();
+    const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
     const [isMapModalOpen, setMapModalOpen] = useState(false);
+    const { isAuthenticated, user } = useContext(AuthContext);
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
+
+     // <<< 1. Novo estado para controlar o status da candidatura
+    const [statusCandidatura, setStatusCandidatura] = useState({
+        carregando: true,
+        candidatado: false,
+        mensagem: ''
+    });
 
     useEffect(() => {
         const fetchAnuncio = async () => {
             try {
-                const res = await axios.get(`/api/anuncios/${id}`);
-                console.log("DADOS DO ANÚNCIO RECEBIDOS:", res.data); // <<< ADICIONE ESTA LINHA
-                setAnuncio(res.data);
+                const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
+                setAnuncio(resAnuncio.data);
+
+                // <<< 2. Se o usuário estiver logado, verifica se ele já se candidatou
+                if (isAuthenticated) {
+                    // (Esta rota de verificação precisa ser criada)
+                    const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
+                    if (resCandidatura.data.candidatado) {
+                        setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
+                    }
+                }
+
             } catch (err) {
                 console.error("Erro ao buscar detalhes do anúncio:", err);
             } finally {
                 setLoading(false);
+                setStatusCandidatura(prev => ({ ...prev, carregando: false }));
             }
         };
         fetchAnuncio();
-    }, [id]);
+    }, [idAnuncio, isAuthenticated]);
+
+    // <<< 3. Função para lidar com o clique no botão
+    const handleCandidatar = async () => {
+        setStatusCandidatura({ ...statusCandidatura, carregando: true });
+        try {
+            const res = await axios.post(`/api/anuncios/${idAnuncio}/candidatar`);
+            setStatusCandidatura({
+                candidatado: true,
+                mensagem: res.data.msg,
+                carregando: false
+            });
+        } catch (err) {
+            setStatusCandidatura({
+                candidatado: false, // Continua não candidatado
+                mensagem: err.response?.data?.msg || 'Erro ao se candidatar.',
+                carregando: false
+            });
+        }
+    };
 
     if (loading) return <div className="container">Carregando...</div>;
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
+
+    const isOwner = user?.id_usuario === anuncio?.id_usuario;
+
+    // --- Lógica de renderização do botão de Ação ---
+    const renderActionButton = () => {
+        if (!isAuthenticated) {
+            return (
+                <Link to="/login" className="btn btn-primary btn-contact">
+                    Faça login para se candidatar
+                </Link>
+            );
+        }
+        if (isOwner) {
+            return <button className="btn btn-secondary btn-contact" disabled>Você é o dono deste anúncio</button>;
+        }
+        if (statusCandidatura.candidatado) {
+            return <button className="btn btn-success btn-contact" disabled>{statusCandidatura.mensagem}</button>;
+        }
+        return (
+            <button 
+                onClick={handleCandidatar} 
+                className="btn btn-primary btn-contact"
+                disabled={statusCandidatura.carregando}
+            >
+                {statusCandidatura.carregando ? 'Enviando...' : 'Candidatar-se'}
+            </button>
+        );
+    };
 
     // Formata a data do serviço para um formato legível
     const dataServicoFormatada = new Date(anuncio.data_servico).toLocaleDateString('pt-BR', {
@@ -105,6 +170,12 @@ const AnuncioDetalhe = () => {
                         <Link to={`/perfil/${anuncio.id_usuario}`} className="btn btn-primary btn-contact">
                             Acessar Perfil Completo
                         </Link>
+                        {/* <<< 4. Renderiza o botão de ação dinâmico */}
+                        {renderActionButton()}
+                        {/* Mostra mensagem de erro, se houver */}
+                        {!statusCandidatura.candidatado && statusCandidatura.mensagem && (
+                            <p style={{color: 'red', marginTop: '1rem'}}>{statusCandidatura.mensagem}</p>
+                        )}
                     </div>
                 </aside>
             </div>

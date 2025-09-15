@@ -3,19 +3,128 @@ const router = express.Router();
 const auth = require('../middleware/auth'); // Nosso middleware de autentica��o
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 
-// @route   GET api/anuncios/meus
-// @desc    Buscar todos os an�ncios do usu�rio logado
+// @route   GET /api/anuncios/meus-publicados
+// @desc    Buscar anúncios publicados pelo usuário com contagem de candidatos
 // @access  Privado
-router.get('/meus', auth, async (req, res) => {
+router.get('/meus-publicados', auth, async (req, res) => {
     try {
-        const anuncios = await db.query( // <<< USA db.query
-            "SELECT * FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC",
-            [req.user.id]
-        );
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo, a.data_publicacao, a.status,
+                -- Subquery para contar o número de candidaturas para cada anúncio
+                (SELECT COUNT(*) FROM Candidatura c WHERE c.fk_id_anuncio = a.id_anuncio) as num_candidatos
+            FROM Anuncio a
+            WHERE a.fk_id_usuario = $1
+            ORDER BY a.data_publicacao DESC;
+        `;
+        const anuncios = await db.query(query, [req.user.id]);
         res.json(anuncios.rows);
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Erro no servidor');
+        res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   GET /api/anuncios/minhas-candidaturas
+// @desc    Buscar anúncios aos quais o usuário se candidatou
+// @access  Privado
+router.get('/minhas-candidaturas', auth, async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                a.id_anuncio, a.titulo, a.status,
+                cand.data_candidatura,
+                u.nome as nome_empresa
+            FROM Candidatura cand
+            JOIN Anuncio a ON cand.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
+            WHERE cand.fk_id_usuario = $1 AND a.status = true -- Apenas anúncios ativos
+            ORDER BY cand.data_candidatura DESC;
+        `;
+        const candidaturas = await db.query(query, [req.user.id]);
+        res.json(candidaturas.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   GET /api/anuncios/:id/verificar-candidatura
+// @desc    Verifica se o usuário logado já se candidatou ao anúncio
+// @access  Privado
+router.get('/:id/verificar-candidatura', auth, async (req, res) => {
+    try {
+        const idAnuncio = req.params.id;
+        const idUsuario = req.user.id;
+        
+        const candidatura = await db.query(
+            'SELECT * FROM Candidatura WHERE fk_id_usuario = $1 AND fk_id_anuncio = $2',
+            [idUsuario, idAnuncio]
+        );
+        
+        if (candidatura.rows.length > 0) {
+            return res.json({ candidatado: true });
+        }
+        
+        res.json({ candidatado: false });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
+
+// @route   POST /api/anuncios/:id/candidatar
+// @desc    Candidatar-se a um anúncio
+// @access  Privado
+router.post('/:id/candidatar', auth, async (req, res) => {
+    const idAnuncio = req.params.id;
+    const idCandidato = req.user.id; // ID do usuário logado
+
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // --- Validações ---
+        // 1. Verificar se o anúncio existe
+        const anuncioResult = await client.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
+        if (anuncioResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
+        const idDonoDoAnuncio = anuncioResult.rows[0].fk_id_usuario;
+
+        // 2. Verificar se o usuário não está se candidatando ao próprio anúncio
+        if (idDonoDoAnuncio === idCandidato) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ msg: 'Você não pode se candidatar ao seu próprio anúncio.' });
+        }
+
+        // 3. Verificar se o usuário já não se candidatou
+        const candidaturaExistente = await client.query(
+            'SELECT * FROM Candidatura WHERE fk_id_usuario = $1 AND fk_id_anuncio = $2',
+            [idCandidato, idAnuncio]
+        );
+        if (candidaturaExistente.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ msg: 'Você já se candidatou para este anúncio.' });
+        }
+
+        // --- Inserção ---
+        // Se todas as validações passaram, insere a candidatura
+        await client.query(
+            'INSERT INTO Candidatura (fk_id_usuario, fk_id_anuncio) VALUES ($1, $2)',
+            [idCandidato, idAnuncio]
+        );
+        
+        await client.query('COMMIT');
+        res.status(201).json({ msg: 'Candidatura enviada com sucesso!' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    } finally {
+        client.release();
     }
 });
 
