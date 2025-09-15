@@ -1,5 +1,5 @@
 // client/src/pages/CriarAnuncio.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react'; // <<< Importar useContext
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import LocationPicker from '../components/LocationPicker';
@@ -11,13 +11,16 @@ import "react-datepicker/dist/react-datepicker.css"; // <<< 2. Importar o CSS do
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import './CriarAnuncio.css';
+import { AuthContext } from '../context/AuthContext'; // <<< Importar AuthContext
 
 const CriarAnuncio = () => {
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext); // <<< Pega o tipo de usuário logado
+    // <<< 1. O 'tipo' do formulário agora é inicializado com base no tipo do usuário
     const [formData, setFormData] = useState({
         titulo: '',
         descricao: '',
-        tipo: 'O',
+        tipo: user?.tipo_usuario === 'P' ? 'S' : 'O', // 'S' para Prestador, 'O' para Empresa
         fk_Area_id_area: '',
         fk_id_servico: '',
     });
@@ -51,6 +54,17 @@ const CriarAnuncio = () => {
         };
         fetchData();
     }, []);
+
+    const isOfertaDeVaga = formData.tipo === 'O';
+    const textosUI = {
+        tituloPagina: isOfertaDeVaga ? "Publicar Nova Vaga" : "Oferecer Meus Serviços",
+        labelTitulo: isOfertaDeVaga ? "Título da Vaga" : "Título do Serviço Oferecido",
+        placeholderTitulo: isOfertaDeVaga ? "Ex: Eletricista para obra residencial" : "Ex: Montador de Torres com experiência",
+        labelDescricao: isOfertaDeVaga ? "Descrição da Vaga e Requisitos" : "Descrição dos Seus Serviços e Experiências",
+        labelData: isOfertaDeVaga ? "Data de Início do Serviço" : "Disponível a partir de",
+        labelLocal: isOfertaDeVaga ? "Local da Obra" : "Minha Localização Base",
+        botaoSubmit: isOfertaDeVaga ? "Publicar Vaga" : "Publicar Disponibilidade"
+    };
 
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -94,11 +108,24 @@ const CriarAnuncio = () => {
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
                 <div className="form-group">
-                    <label>Título do Anúncio</label>
-                    <input type="text" name="titulo" value={formData.titulo} onChange={onChange} required />
+                    <label>Tipo de Anúncio</label>
+                    <div className="radio-group" style={{ display: 'flex', gap: '1rem' }}>
+                        <label>
+                            <input type="radio" name="tipo" value="O" checked={formData.tipo === 'O'} onChange={onChange} /> 
+                            Estou procurando um profissional (Vaga)
+                        </label>
+                        <label>
+                            <input type="radio" name="tipo" value="S" checked={formData.tipo === 'S'} onChange={onChange} /> 
+                            Estou oferecendo meus serviços
+                        </label>
+                    </div>
                 </div>
                 <div className="form-group">
-                    <label>Descrição Detalhada</label>
+                    <label>{textosUI.labelTitulo}</label>
+                    <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required />
+                </div>
+                <div className="form-group">
+                    <label>{textosUI.labelDescricao}</label>
                     <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required />
                 </div>
                 <div className="form-group">
@@ -116,15 +143,14 @@ const CriarAnuncio = () => {
                     </select>
                 </div>
 
-                {/* <<< 5. Integração do DatePicker */}
                 <div className="form-group">
-                    <label>Data de Início do Serviço</label>
+                    <label>{textosUI.labelData}</label>
                     <DatePicker 
                         selected={dataServico} 
                         onChange={(date) => setDataServico(date)}
                         dateFormat="dd/MM/yyyy"
-                        minDate={new Date()} // Impede a seleção de datas passadas
-                        className="custom-datepicker-input" // Aplica nossa classe customizada
+                        minDate={new Date()}
+                        className="custom-datepicker-input"
                     />
                 </div>
 
