@@ -1,0 +1,135 @@
+.main-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 2rem;
+    height: 70px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    
+    /* Chave para o novo layout */
+    display: flex;
+    align-items: center; /* Centraliza verticalmente */
+    justify-content: space-between; /* Empurra os filhos para os cantos */
+}
+
+/* Grupo da Esquerda: Logo + Busca */
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem; /* Espaçamento entre o logo e a busca */
+}
+
+/* Grupo da Direita: Navegação */
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.logo {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #fa5700;
+    text-decoration: none;
+}
+
+.search-bar-placeholder {
+    width: 350px;
+    display: flex;
+}
+
+.search-bar-placeholder input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 20px 0 0 20px;
+    font-size: 1rem;
+    border-right: none;
+    background-color: #f5f5f5; /* Cor de fundo suave para o input */
+}
+.search-bar-placeholder input:focus {
+    background-color: #fff;
+    outline: none;
+}
+
+.search-bar-placeholder button {
+    padding: 0 1rem;
+    border: 1px solid #ccc;
+    background-color: #f5f5f5;
+    border-radius: 0 20px 20px 0;
+    cursor: pointer;
+    border-left: none;
+
+    /* Adiciona flexbox para centralizar o ícone perfeitamente */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-bar-placeholder button:hover {
+    background-color: #e0e0e0;
+}
+
+.search-bar-placeholder button img {
+    height: 16px; /* Ajuste a altura do ícone conforme necessário */
+    width: auto;
+}
+
+.main-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+
+/* ... O resto do CSS (.nav-link, .nav-button, etc.) pode permanecer o mesmo ... */
+.nav-link {
+    text-decoration: none;
+    color: #555;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.nav-link:hover {
+    color: #fa5700;
+}
+
+.nav-button {
+    padding: 0.6rem 1.2rem;
+    border: 1px solid #fa5700;
+    border-radius: 20px;
+    text-decoration: none;
+    color: #fa5700;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.nav-button.publish-button {
+    background-color: #fa5700;
+    color: white;
+}
+
+.nav-button:hover {
+    background-color: #fc752c;
+    color: white;
+    border-color: #fc752c;
+}
+
+.avatar-menu {
+    cursor: pointer;
+}
+
+.avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #fa5700;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
