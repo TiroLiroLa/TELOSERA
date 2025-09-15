@@ -30,7 +30,7 @@
 .logo {
     font-size: 1.8rem;
     font-weight: bold;
-    color: #007bff;
+    color: #fa5700;
     text-decoration: none;
 }
 
@@ -92,29 +92,29 @@
 }
 
 .nav-link:hover {
-    color: #007bff;
+    color: #fa5700;
 }
 
 .nav-button {
     padding: 0.6rem 1.2rem;
-    border: 1px solid #007bff;
+    border: 1px solid #fa5700;
     border-radius: 20px;
     text-decoration: none;
-    color: #007bff;
+    color: #fa5700;
     font-weight: 500;
     transition: all 0.2s;
     white-space: nowrap;
 }
 
 .nav-button.publish-button {
-    background-color: #007bff;
+    background-color: #fa5700;
     color: white;
 }
 
 .nav-button:hover {
-    background-color: #0056b3;
+    background-color: #fc752c;
     color: white;
-    border-color: #0056b3;
+    border-color: #fc752c;
 }
 
 .avatar-menu {
@@ -125,7 +125,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #007bff;
+    background-color: #fa5700;
     color: white;
     display: flex;
     align-items: center;
