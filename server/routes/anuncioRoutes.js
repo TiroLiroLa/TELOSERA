@@ -338,7 +338,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
 // @access  P�blico
 router.get('/', async (req, res) => {
     // Extrai todos os possíveis parâmetros da query string
-    const { q, tipo, lat, lng, raio, area, servico } = req.query;
+    const { q, tipo, lat, lng, raio, area, servico, sortBy } = req.query;
 
     let query = `
         SELECT 
@@ -348,6 +348,8 @@ router.get('/', async (req, res) => {
             serv.nome as nome_servico,
             c.nome as nome_cidade,
             e.uf as uf_estado
+            -- <<< 1. Calcula a distância se os parâmetros de localização forem fornecidos
+            ${lat && lng ? `, ST_Distance(a.local, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
         FROM Anuncio a
         JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
         JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
@@ -391,7 +393,9 @@ router.get('/', async (req, res) => {
     // 5. Filtro por Proximidade Geográfica (lat, lng, raio)
     // ST_DWithin é uma função do PostGIS que verifica se geometrias estão dentro de uma distância.
     if (lat && lng && raio) {
-        conditions.push(`ST_DWithin(a.local, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
+        // A CORREÇÃO: Converte a coluna 'a.local' para 'geography' também,
+        // garantindo que o cálculo seja feito em metros de forma consistente.
+        conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
         values.push(lng, lat, raio * 1000); // Raio em metros
         paramIndex += 3;
     }
@@ -400,7 +404,14 @@ router.get('/', async (req, res) => {
         query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY a.data_publicacao DESC';
+    // <<< 2. Lógica de Ordenação Dinâmica
+    if (sortBy === 'distance' && lat && lng) {
+        // Ordena pela coluna de distância calculada (em metros)
+        query += ' ORDER BY distancia ASC'; 
+    } else {
+        // Ordenação padrão por data
+        query += ' ORDER BY a.data_publicacao DESC';
+    }
 
     try {
         const anuncios = await db.query(query, values);

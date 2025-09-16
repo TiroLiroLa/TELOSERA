@@ -9,23 +9,40 @@ const Busca = () => {
     const [resultados, setResultados] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Estado para os filtros da sidebar
-    const [filtros, setFiltros] = useState({
-        q: searchParams.get('q') || '',
-        tipo: searchParams.get('tipo') || '',
-        area: searchParams.get('area') || '',
-        servico: searchParams.get('servico') || ''
-    });
+    // <<< 1. A função de inicialização agora lê TODOS os parâmetros da URL
+    const inicializarFiltros = () => {
+        return {
+            q: searchParams.get('q') || '',
+            tipo: searchParams.get('tipo') || '',
+            area: searchParams.get('area') || '',
+            servico: searchParams.get('servico') || '',
+            sortBy: searchParams.get('sortBy') || 'relevance',
+            lat: searchParams.get('lat') || '',
+            lng: searchParams.get('lng') || '',
+            raio: searchParams.get('raio') || '',
+        };
+    };
 
-    // Estados para popular os dropdowns de filtro
+    const [filtros, setFiltros] = useState(inicializarFiltros);
     const [areas, setAreas] = useState([]);
     const [servicos, setServicos] = useState([]);
+
+    // <<< 2. 'isGeoSearch' agora é derivado diretamente do estado 'filtros'
+    const isGeoSearch = filtros.lat && filtros.lng;
 
     const fetchResultados = useCallback(async () => {
         try {
             setLoading(true);
-            // Cria a query string a partir do objeto de filtros
-            const params = new URLSearchParams(filtros).toString();
+            
+            // <<< 3. Limpa filtros vazios antes de criar a query string
+            const filtrosAtivos = {};
+            for (const key in filtros) {
+                if (filtros[key]) {
+                    filtrosAtivos[key] = filtros[key];
+                }
+            }
+            
+            const params = new URLSearchParams(filtrosAtivos).toString();
             const res = await axios.get(`/api/anuncios?${params}`);
             setResultados(res.data);
         } catch (error) {
@@ -36,9 +53,18 @@ const Busca = () => {
     }, [filtros]);
 
     useEffect(() => {
+        // Quando os filtros mudam, busca os resultados e atualiza a URL
         fetchResultados();
-        // Atualiza a URL quando os filtros mudam
-        setSearchParams(filtros, { replace: true });
+        
+        // Limpa filtros vazios antes de escrever na URL para deixá-la limpa
+        const filtrosAtivos = {};
+        for (const key in filtros) {
+            if (filtros[key]) {
+                filtrosAtivos[key] = filtros[key];
+            }
+        }
+        setSearchParams(filtrosAtivos, { replace: true });
+
     }, [fetchResultados, setSearchParams, filtros]);
     
     // Busca dados para os filtros uma vez
@@ -55,13 +81,26 @@ const Busca = () => {
     }, []);
 
     const handleFiltroChange = (e) => {
-        setFiltros(prev => ({...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        // Se mudamos para 'Mais Recentes', removemos o sortBy da URL para mantê-la limpa
+        if (name === 'sortBy' && value === 'relevance') {
+            setFiltros(prev => {
+                const newFilters = { ...prev };
+                delete newFilters.sortBy;
+                return newFilters;
+            });
+        } else {
+            setFiltros(prev => ({...prev, [name]: value }));
+        }
     };
 
     return (
         <div className="busca-page-container">
             <aside className="filtros-sidebar">
                 <h2>Filtros</h2>
+                <div className="form-group">
+                    <button>Buscar perto de mim (Função a implementar)</button>
+                </div>
                 <div className="form-group">
                     <label>Palavra-chave</label>
                     <input type="text" name="q" value={filtros.q} onChange={handleFiltroChange} />
@@ -91,7 +130,17 @@ const Busca = () => {
                 {/* O filtro de mapa seria um componente mais complexo, adicionado aqui no futuro */}
             </aside>
             <main className="resultados-main">
-                <h2>Resultados da Busca ({resultados.length})</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2>Resultados da Busca ({resultados.length})</h2>
+                    <div className="form-group">
+                        <label style={{ marginRight: '10px' }}>Ordenar por:</label>
+                        <select name="sortBy" value={filtros.sortBy} onChange={handleFiltroChange}>
+                            <option value="relevance">Mais Recentes</option>
+                            {/* <<< A condição agora usa a variável 'isGeoSearch' que vem do estado */}
+                            {isGeoSearch && <option value="distance">Menor Distância</option>}
+                        </select>
+                    </div>
+                </div>
                 {loading ? (
                     <p>Buscando...</p>
                 ) : (
