@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const AnuncioDashboardCard = ({ anuncio, tipo }) => {
+const AnuncioDashboardCard = ({ anuncio, tipo, onAvaliarClick }) => {
     const postadoEm = new Date(anuncio.data_publicacao || anuncio.data_candidatura).toLocaleDateString('pt-BR');
     
     // Renderiza a versão para "Meus Anúncios Publicados"
@@ -56,8 +56,15 @@ const AnuncioDashboardCard = ({ anuncio, tipo }) => {
                         <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
                         <p>Confirmado em: {dataConfirmacao} | Contratante: {anuncio.nome_empresa}</p>
                     </div>
-                    {/* Futuramente um botão de 'Avaliar' */}
+                    <div className="card-actions">
+                    {anuncio.avaliacao_realizada ? (
+                        <button className="btn" disabled>Avaliado</button>
+                    ) : (
+                        <button className="btn btn-primary" onClick={() => onAvaliarClick(anuncio)}>Avaliar</button>
+                    )}
                 </div>
+                </div>
+                
             );
         }
 
@@ -69,7 +76,13 @@ const AnuncioDashboardCard = ({ anuncio, tipo }) => {
                         <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
                         <p>Confirmado em: {dataConfirmacao} | Candidato selecionado: {anuncio.nome_candidato}</p>
                     </div>
-                    {/* Futuramente um botão de 'Avaliar' */}
+                    <div className="card-actions">
+                    {anuncio.avaliacao_realizada ? (
+                        <button className="btn" disabled>Avaliado</button>
+                    ) : (
+                        <button className="btn btn-primary" onClick={() => onAvaliarClick(anuncio)}>Avaliar</button>
+                    )}
+                </div>
                 </div>
             );
         }

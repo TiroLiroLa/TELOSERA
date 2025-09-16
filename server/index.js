@@ -23,6 +23,8 @@ app.use('/api/anuncios', require('./routes/anuncioRoutes')); // <<< NOVA LINHA
 
 app.use('/api/dados', require('./routes/dadosRoutes')); // <<< NOVA LINHA
 
+app.use('/api/avaliacoes', require('./routes/avaliacaoRoutes'));
+
 // Define a porta do servidor
 const PORT = process.env.PORT || 3001;
 

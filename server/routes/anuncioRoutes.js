@@ -10,18 +10,18 @@ const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 router.get('/meus-confirmados', auth, async (req, res) => {
     try {
         const query = `
-            SELECT 
-                a.id_anuncio, a.titulo,
-                conf.data_confirmacao,
-                cand.nome as nome_candidato
+        SELECT 
+            a.id_anuncio, a.titulo, conf.data_confirmacao,
+            cand.id_usuario as id_candidato, cand.nome as nome_candidato,
+            (SELECT COUNT(*) > 0 FROM Avaliacao av 
+             WHERE av.fk_id_avaliador = a.fk_id_usuario AND av.fk_id_avaliado = cand.id_usuario
+             AND av.fk_id_confirmacao = conf.id_confirmacao
+            ) as avaliacao_realizada
             FROM Anuncio a
-            -- Para encontrar o candidato confirmado, precisamos de múltiplos JOINs
             JOIN Candidatura c ON a.id_anuncio = c.fk_id_anuncio
             JOIN Confirmacao conf ON c.fk_id_usuario = conf.fk_id_usuario
             JOIN Usuario cand ON conf.fk_id_usuario = cand.id_usuario
-            WHERE a.fk_id_usuario = $1 AND a.status = false -- Anúncios do usuário logado E que estão encerrados
-            -- A condição acima assume que a confirmação sempre encerra o anúncio.
-            -- Uma verificação mais robusta seria checar se existe uma confirmação associada.
+            WHERE a.fk_id_usuario = $1 AND a.status = false
             ORDER BY conf.data_confirmacao DESC;
         `;
         const anuncios = await db.query(query, [req.user.id]);
@@ -39,9 +39,12 @@ router.get('/trabalhos-confirmados', auth, async (req, res) => {
     try {
         const query = `
             SELECT 
-                a.id_anuncio, a.titulo,
-                conf.data_confirmacao,
-                emp.nome as nome_empresa
+                a.id_anuncio, a.titulo, conf.data_confirmacao,
+                emp.id_usuario as id_empresa, emp.nome as nome_empresa,
+                (SELECT COUNT(*) > 0 FROM Avaliacao av 
+                    WHERE av.fk_id_avaliador = conf.fk_id_usuario AND av.fk_id_avaliado = emp.id_usuario
+                    AND av.fk_id_confirmacao = conf.id_confirmacao
+                ) as avaliacao_realizada
             FROM Confirmacao conf
             JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
             JOIN Anuncio a ON c.fk_id_anuncio = a.id_anuncio

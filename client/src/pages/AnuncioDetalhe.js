@@ -10,7 +10,7 @@ import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
     const [isMapModalOpen, setMapModalOpen] = useState(false);
-    const { isAuthenticated, loading: authLoading, user } = useContext(AuthContext); // <<< Pega o status de loading da auth
+    const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext); // Pega o authLoading
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -54,6 +54,42 @@ const AnuncioDetalhe = () => {
         // Espera a autenticação carregar antes de buscar, para garantir que temos o token
         if (!authLoading) {
             fetchAnuncio();
+        }
+    }, [idAnuncio, isAuthenticated, authLoading]);
+
+    useEffect(() => {
+        const fetchDados = async () => {
+            try {
+                // A busca do anúncio em si não depende do login
+                const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
+                setAnuncio(resAnuncio.data);
+
+                // Lógica de candidatura só roda se o usuário estiver logado
+                if (isAuthenticated) {
+                    const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
+                    if (resCandidatura.data.candidatado) {
+                        setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
+                    } else {
+                        // <<< CORREÇÃO 1: Caminho para "não candidatado"
+                        setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                    }
+                } else {
+                    // <<< CORREÇÃO 2: Caminho para "não logado"
+                    setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                }
+            } catch (err) {
+                console.error("Erro ao buscar dados:", err);
+                // Também precisamos parar de carregar em caso de erro
+                setStatusCandidatura({ candidatado: false, mensagem: 'Erro ao carregar dados.', carregando: false });
+            } finally {
+                // O loading geral da página
+                setLoading(false);
+            }
+        };
+
+        // Espera a autenticação carregar para saber se faz a chamada de verificação
+        if (!authLoading) {
+            fetchDados();
         }
     }, [idAnuncio, isAuthenticated, authLoading]);
 
@@ -110,7 +146,7 @@ const AnuncioDetalhe = () => {
             <button 
                 onClick={handleCandidatar} 
                 className="btn btn-primary btn-contact"
-                disabled={statusCandidatura.carregando}
+                disabled={statusCandidatura.carregando} // Esta linha é a chave
             >
                 {statusCandidatura.carregando ? 'Enviando...' : 'Candidatar-se'}
             </button>
