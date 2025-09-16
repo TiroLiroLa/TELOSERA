@@ -280,41 +280,12 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         // <<< 1. Pega lat/lng da query string, se enviados pelo frontend
         const { lat, lng } = req.query;
 
-        // 1. Busca os dados essenciais do anúncio primeiro
-        const anuncioBaseQuery = `
-            SELECT 
-                a.status, 
-                a.fk_id_usuario,
-                -- Subquery para encontrar o ID do candidato confirmado, se houver
-                (SELECT conf.fk_id_usuario FROM Confirmacao conf
-                 JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
-                 WHERE c.fk_id_anuncio = a.id_anuncio LIMIT 1) as id_candidato_confirmado
-            FROM Anuncio a
-            WHERE a.id_anuncio = $1;
-        `;
-        const anuncioBaseResult = await db.query(anuncioBaseQuery, [idAnuncio]);
-
-        if (anuncioBaseResult.rows.length === 0) {
-            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
-        }
-
-        const anuncio = anuncioBaseResult.rows[0];
-        const isOwner = idUsuarioLogado === anuncio.fk_id_usuario;
-        const isConfirmedCandidate = idUsuarioLogado === anuncio.id_candidato_confirmado;
-        
-        // 2. Lógica de Permissão
-        if (anuncio.status === false) { // Se o anúncio está encerrado
-            if (!idUsuarioLogado || (!isOwner && !isConfirmedCandidate)) {
-                return res.status(403).json({ msg: "Este anúncio está encerrado e não pode ser visualizado." });
-            }
-        }
-        
         // 2. A query de detalhes agora calcula a distância condicionalmente
         const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
                 a.status, ST_AsText(a.local) as localizacao,
-                u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
+                u.id_usuario as id_publicador, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
                 area.nome as nome_area, serv.nome as nome_servico,
                 c.nome as nome_cidade, e.uf as uf_estado
                 ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
@@ -332,7 +303,57 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
             return res.status(404).json({ msg: 'Anúncio não encontrado.' });
         }
         
-        res.json(detalhesResult.rows[0]);
+        const anuncio = detalhesResult.rows[0];
+        const idPublicador = anuncio.id_publicador; // Pegamos o ID do dono do anúncio
+        const isOwner = idUsuarioLogado === anuncio.fk_id_usuario;
+        const isConfirmedCandidate = idUsuarioLogado === anuncio.id_candidato_confirmado;
+
+        // --- LÓGICA DE PERMISSÃO PARA ANÚNCIOS ENCERRADOS (REFINADA) ---
+        if (anuncio.status === false) {
+            const confirmacaoQuery = `SELECT fk_id_usuario FROM Confirmacao WHERE fk_id_anuncio = $1 LIMIT 1`;
+            const confirmacaoResult = await db.query(confirmacaoQuery, [idAnuncio]);
+            const idCandidatoConfirmado = confirmacaoResult.rows[0]?.fk_id_usuario;
+
+            const isOwner = idUsuarioLogado === idPublicador;
+            const isConfirmedCandidate = idUsuarioLogado === idCandidatoConfirmado;
+
+            if (!idUsuarioLogado || (!isOwner && !isConfirmedCandidate)) {
+                return res.status(403).json({ msg: "Este anúncio está encerrado e não pode ser visualizado." });
+            }
+        }
+        
+        // --- BUSCA DA AVALIAÇÃO DO PUBLICADOR ---
+        const avaliacaoQuery = `
+            SELECT 
+                COALESCE(AVG((ap.satisfacao + ap.pontualidade) / 2.0), 0) as media_prestador,
+                COALESCE(AVG((ac.clareza_demanda + ac.pagamento) / 2.0), 0) as media_contratante,
+                COUNT(av.id_avaliacao) as total_avaliacoes
+            FROM Usuario u
+            LEFT JOIN Avaliacao av ON u.id_usuario = av.fk_id_avaliado
+            LEFT JOIN Avaliacao_prestador ap ON av.id_avaliacao = ap.fk_id_avaliacao
+            LEFT JOIN Avaliacao_contratante ac ON av.id_avaliacao = ac.fk_id_avaliacao
+            WHERE u.id_usuario = $1
+            GROUP BY u.id_usuario;
+        `;
+        const avaliacaoResult = await db.query(avaliacaoQuery, [idPublicador]);
+        
+        let avaliacaoData = { media_geral: 0, total_avaliacoes: 0 };
+        if (avaliacaoResult.rows.length > 0) {
+            const { media_prestador, media_contratante, total_avaliacoes } = avaliacaoResult.rows[0];
+            const somaMedias = parseFloat(media_prestador) + parseFloat(media_contratante);
+            const numTiposAvaliacao = (media_prestador > 0 ? 1 : 0) + (media_contratante > 0 ? 1 : 0);
+            const media_geral = numTiposAvaliacao > 0 ? somaMedias / numTiposAvaliacao : 0;
+            
+            avaliacaoData = {
+                media_geral: parseFloat(media_geral.toFixed(1)),
+                total_avaliacoes: parseInt(total_avaliacoes)
+            };
+        }
+
+        // Adiciona o objeto de avaliação ao resultado final do anúncio
+        anuncio.avaliacao = avaliacaoData;
+
+        res.json(anuncio);
 
     } catch (err) {
         console.error(err.message);

@@ -6,6 +6,7 @@ import './AnuncioDetalhe.css'; // Importa o novo CSS
 import Modal from '../components/Modal'; // Para o mapa
 import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
 import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
+import StarRating from '../components/StarRating'; // <<< Importar
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
@@ -125,7 +126,7 @@ const AnuncioDetalhe = () => {
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
-    const isOwner = user?.id_usuario === anuncio?.id_usuario;
+    const isOwner = user?.id_usuario === anuncio?.id_publicador;
 
     // --- Lógica de renderização do botão de Ação ---
     const renderActionButton = () => {
@@ -166,7 +167,7 @@ const AnuncioDetalhe = () => {
                 <div className="anuncio-header">
                     <h1>{anuncio.titulo}</h1>
                     <p className="anuncio-subheader">
-                        Postado por <Link to={`/perfil/${anuncio.id_usuario}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
+                        Postado por <Link to={`/perfil/${anuncio.id_publicador}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
                         {anuncio.nome_cidade && (
                             <>
                                 {' - '}
@@ -223,6 +224,13 @@ const AnuncioDetalhe = () => {
                         <h3>{anuncio.tipo === 'O' ? 'Contratante' : 'Prestador'}</h3>
                         <p>{anuncio.nome_usuario}</p>
 
+                        {anuncio.avaliacao && (
+                                <div className="sidebar-rating">
+                                <StarRating rating={anuncio.avaliacao.media_geral} />
+                                <span> ({anuncio.avaliacao.total_avaliacoes})</span>
+                            </div>
+                        )}
+
                         {/* <<< 3. Seção de Contato Direto */}
                         <div className="contact-details">
                             <h4>Contato Direto</h4>
@@ -231,7 +239,7 @@ const AnuncioDetalhe = () => {
                         </div>
                         
                         {/* <<< 4. Botão principal agora é "Acessar Perfil" */}
-                        <Link to={`/perfil/${anuncio.id_usuario}`} className="btn btn-primary btn-contact">
+                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn btn-primary btn-contact">
                             Acessar Perfil Completo
                         </Link>
                         {/* <<< 4. Renderiza o botão de ação dinâmico */}

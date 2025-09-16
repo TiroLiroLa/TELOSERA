@@ -7,6 +7,22 @@ const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 const auth = require('../middleware/auth'); // Importe o middleware de autentica��o
 
+// Rota GET /me (protegida)
+router.get('/me', auth, async (req, res) => {
+  try {
+    const user = await db.query('SELECT id_usuario, nome, email, tipo_usuario FROM Usuario WHERE id_usuario = $1', [
+      req.user.id,
+    ]);
+    if(user.rows.length === 0) {
+        return res.status(404).json({ msg: 'Usuário não encontrado.'})
+    }
+    res.json(user.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Erro no Servidor');
+  }
+});
+
 // @route   GET /api/users/me/regiao
 // @desc    Buscar a região de atuação principal do usuário logado
 // @access  Privado
@@ -30,20 +46,22 @@ router.get('/me/regiao', auth, async (req, res) => {
     }
 });
 
-// Rota GET /me (protegida)
-router.get('/me', auth, async (req, res) => {
-  try {
-    const user = await db.query('SELECT id_usuario, nome, email, tipo_usuario FROM Usuario WHERE id_usuario = $1', [
-      req.user.id,
-    ]);
-    if(user.rows.length === 0) {
-        return res.status(404).json({ msg: 'Usuário não encontrado.'})
+// @route   GET /api/users/me/areas
+// @desc    Buscar as áreas de atuação do usuário logado
+// @access  Privado
+router.get('/me/areas', auth, async (req, res) => {
+    try {
+        const query = `
+            SELECT area.id_area, area.nome FROM Usuario_area ua
+            JOIN Area_atuacao area ON ua.fk_id_area = area.id_area
+            WHERE ua.fk_id_usuario = $1;
+        `;
+        const result = await db.query(query, [req.user.id]);
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
     }
-    res.json(user.rows[0]);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Erro no Servidor');
-  }
 });
 
 // @route   GET /api/users/:id
@@ -51,49 +69,94 @@ router.get('/me', auth, async (req, res) => {
 // @access  Público
 // Rota GET /api/users/:id (Perfil Público) - VERSÃO CORRIGIDA COM ST_AsText
 router.get('/:id', async (req, res) => {
+    const idUsuarioPerfil = req.params.id;
+
+    // Etapa 0: Validação de segurança do ID
+    if (isNaN(parseInt(idUsuarioPerfil))) {
+        return res.status(400).json({ msg: "ID de usuário inválido." });
+    }
+
     try {
-        // Query para os dados principais do perfil
-        const perfilQuery = `
-            SELECT 
-                u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro, u.telefone,
-                c.nome as cidade, e.uf as estado,
-                ST_AsText(r.local) as localizacao, r.raio
-            FROM Usuario u
-            LEFT JOIN Atua a ON u.id_usuario = a.fk_id_usuario
-            LEFT JOIN Regiao_atuacao r ON a.fk_id_regiao = r.id_regiao
-            LEFT JOIN Cidade c ON r.fk_id_cidade = c.id_cidade
-            LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
-            WHERE u.id_usuario = $1;
-        `;
-        const perfilResult = await db.query(perfilQuery, [req.params.id]);
-        
-        if (perfilResult.rows.length === 0) {
+        // --- Query 1: Dados Base do Usuário ---
+        // Busca apenas da tabela Usuario. É a query mais importante e robusta.
+        const perfilBaseQuery = 'SELECT id_usuario, nome, tipo_usuario, data_cadastro, telefone FROM Usuario WHERE id_usuario = $1';
+        const perfilBaseResult = await db.query(perfilBaseQuery, [idUsuarioPerfil]);
+
+        if (perfilBaseResult.rows.length === 0) {
             return res.status(404).json({ msg: "Usuário não encontrado." });
         }
+        
+        // Inicia o objeto de resposta com os dados base
+        let perfilCompleto = { ...perfilBaseResult.rows[0] };
 
-        // Query separada para buscar as especialidades (áreas de atuação)
+        // --- Query 2: Dados da Região de Atuação (se existir) ---
+        // Busca os dados da região separadamente para não quebrar a busca principal.
+        const regiaoQuery = `
+            SELECT 
+                c.nome as cidade, e.uf as estado,
+                ST_AsText(r.local) as localizacao, r.raio
+            FROM Atua a
+            JOIN Regiao_atuacao r ON a.fk_id_regiao = r.id_regiao
+            JOIN Cidade c ON r.fk_id_cidade = c.id_cidade
+            JOIN Estado e ON c.fk_id_estado = e.id_estado
+            WHERE a.fk_id_usuario = $1 LIMIT 1;
+        `;
+        const regiaoResult = await db.query(regiaoQuery, [idUsuarioPerfil]);
+        
+        // Se encontrou uma região, adiciona os dados ao objeto de resposta
+        if (regiaoResult.rows.length > 0) {
+            perfilCompleto = { ...perfilCompleto, ...regiaoResult.rows[0] };
+        }
+
+        // --- Query 3: Dados de Avaliação ---
+        const avaliacaoQuery = `
+            SELECT 
+                COALESCE(AVG((ap.satisfacao + ap.pontualidade) / 2.0), 0) as media_prestador,
+                COALESCE(AVG((ac.clareza_demanda + ac.pagamento) / 2.0), 0) as media_contratante,
+                COUNT(av.id_avaliacao) as total_avaliacoes
+            FROM Usuario u
+            LEFT JOIN Avaliacao av ON u.id_usuario = av.fk_id_avaliado
+            LEFT JOIN Avaliacao_prestador ap ON av.id_avaliacao = ap.fk_id_avaliacao
+            LEFT JOIN Avaliacao_contratante ac ON av.id_avaliacao = ac.fk_id_avaliacao
+            WHERE u.id_usuario = $1
+            GROUP BY u.id_usuario;
+        `;
+        const avaliacaoResult = await db.query(avaliacaoQuery, [idUsuarioPerfil]);
+        
+        let avaliacaoData = { media_geral: 0, total_avaliacoes: 0 };
+        if (avaliacaoResult.rows.length > 0) {
+            const { media_prestador, media_contratante, total_avaliacoes } = avaliacaoResult.rows[0];
+            const somaMedias = parseFloat(media_prestador) + parseFloat(media_contratante);
+            const numTiposAvaliacao = (media_prestador > 0 ? 1 : 0) + (media_contratante > 0 ? 1 : 0);
+            const media_geral = numTiposAvaliacao > 0 ? somaMedias / numTiposAvaliacao : 0;
+            
+            avaliacaoData = {
+                media_geral: parseFloat(media_geral.toFixed(1)),
+                total_avaliacoes: parseInt(total_avaliacoes)
+            };
+        }
+        perfilCompleto.avaliacao = avaliacaoData;
+
+        // --- Query 4: Especialidades (Áreas de Atuação) ---
         const areasQuery = `
             SELECT area.id_area, area.nome FROM Usuario_area ua
             JOIN Area_atuacao area ON ua.fk_id_area = area.id_area
             WHERE ua.fk_id_usuario = $1;
         `;
-        const areasResult = await db.query(areasQuery, [req.params.id]);
-        
-        // Query separada para buscar os anúncios publicados pelo usuário
-        const anunciosQuery = `SELECT id_anuncio, titulo, descricao, tipo FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC LIMIT 5`;
-        const anunciosResult = await db.query(anunciosQuery, [req.params.id]);
+        const areasResult = await db.query(areasQuery, [idUsuarioPerfil]);
+        perfilCompleto.especialidades = areasResult.rows;
 
-        // Combina todos os resultados em um único objeto JSON
-        const perfilCompleto = {
-            ...perfilResult.rows[0],
-            especialidades: areasResult.rows,
-            anuncios: anunciosResult.rows
-        };
+        // --- Query 5: Últimos Anúncios ---
+        const anunciosQuery = `SELECT id_anuncio, titulo, descricao, tipo FROM Anuncio WHERE fk_id_usuario = $1 AND status = true ORDER BY data_publicacao DESC LIMIT 5`;
+        const anunciosResult = await db.query(anunciosQuery, [idUsuarioPerfil]);
+        perfilCompleto.anuncios = anunciosResult.rows;
         
+        // Envia o objeto completo como resposta
         res.json(perfilCompleto);
 
     } catch (err) {
-        console.error(err.message);
+        // Tratamento de erro genérico
+        console.error(`Erro ao buscar perfil para ID ${idUsuarioPerfil}:`, err.message);
         res.status(500).send("Erro no servidor");
     }
 });
@@ -185,24 +248,6 @@ router.put('/me', auth, async (req, res) => {
         const result = await db.query(query, values);
 
         res.json(result.rows[0]);
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send("Erro no servidor");
-    }
-});
-
-// @route   GET /api/users/me/areas
-// @desc    Buscar as áreas de atuação do usuário logado
-// @access  Privado
-router.get('/me/areas', auth, async (req, res) => {
-    try {
-        const query = `
-            SELECT area.id_area, area.nome FROM Usuario_area ua
-            JOIN Area_atuacao area ON ua.fk_id_area = area.id_area
-            WHERE ua.fk_id_usuario = $1;
-        `;
-        const result = await db.query(query, [req.user.id]);
-        res.json(result.rows);
     } catch (err) {
         console.error(err.message);
         res.status(500).send("Erro no servidor");

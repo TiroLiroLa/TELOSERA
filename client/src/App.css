@@ -34,3 +34,15 @@ main {
     margin: 2rem auto; /* Adiciona espaçamento acima/abaixo e centraliza */
     padding: 0 2rem; /* Adiciona espaçamento nas laterais */
 }
+
+.star-rating {
+    display: inline-block;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+.star-filled {
+    color: #ffc107; /* Amarelo/Dourado */
+}
+.star-empty {
+    color: #e4e5e9; /* Cinza claro */
+}
