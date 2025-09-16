@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AnuncioCard from '../components/AnuncioCard'; // Reutilizamos o card da Home
 import './Busca.css'; // Vamos criar este CSS
+import Modal from '../components/Modal'; // <<< 1. Importar Modal
+import LocationPicker from '../components/LocationPicker'; // <<< 2. Importar LocationPicker
 
 const Busca = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -26,6 +28,10 @@ const Busca = () => {
     const [filtros, setFiltros] = useState(inicializarFiltros);
     const [areas, setAreas] = useState([]);
     const [servicos, setServicos] = useState([]);
+
+    const [isMapModalOpen, setMapModalOpen] = useState(false);
+    const [tempLocation, setTempLocation] = useState(null); // Posição selecionada no mapa
+    const [tempRaio, setTempRaio] = useState(filtros.raio || '20'); // Raio inserido no modal (padrão 20km)
 
     // <<< 2. 'isGeoSearch' agora é derivado diretamente do estado 'filtros'
     const isGeoSearch = filtros.lat && filtros.lng;
@@ -94,13 +100,40 @@ const Busca = () => {
         }
     };
 
+    const handleApplyGeoFilter = () => {
+        if (tempLocation && tempRaio) {
+            setFiltros(prev => ({
+                ...prev,
+                lat: tempLocation.lat,
+                lng: tempLocation.lng,
+                raio: tempRaio,
+                sortBy: 'distance' // Opcional: define a ordenação por distância como padrão
+            }));
+            setMapModalOpen(false); // Fecha o modal
+        } else {
+            alert("Por favor, selecione um local no mapa e defina um raio.");
+        }
+    };
+
+    const handleClearGeoFilter = () => {
+        setFiltros(prev => {
+            const newFilters = { ...prev };
+            delete newFilters.lat;
+            delete newFilters.lng;
+            delete newFilters.raio;
+            // Se a ordenação era por distância, volta para o padrão
+            if (newFilters.sortBy === 'distance') {
+                delete newFilters.sortBy;
+            }
+            return newFilters;
+        });
+    };
+
     return (
+        <>
         <div className="busca-page-container">
             <aside className="filtros-sidebar">
                 <h2>Filtros</h2>
-                <div className="form-group">
-                    <button>Buscar perto de mim (Função a implementar)</button>
-                </div>
                 <div className="form-group">
                     <label>Palavra-chave</label>
                     <input type="text" name="q" value={filtros.q} onChange={handleFiltroChange} />
@@ -127,7 +160,19 @@ const Busca = () => {
                         {servicos.map(s => <option key={s.id_servico} value={s.id_servico}>{s.nome}</option>)}
                     </select>
                 </div>
-                {/* O filtro de mapa seria um componente mais complexo, adicionado aqui no futuro */}
+                <div className="form-group">
+                    <label>Localização</label>
+                    {isGeoSearch ? (
+                        <div className="geo-filter-summary">
+                            <span>Busca ativa em um raio de {filtros.raio} km.</span>
+                            <button onClick={handleClearGeoFilter} className="clear-btn">Limpar</button>
+                        </div>
+                    ) : (
+                        <button type="button" onClick={() => setMapModalOpen(true)}>
+                            Buscar Perto de Mim
+                        </button>
+                    )}
+                </div>
             </aside>
             <main className="resultados-main">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -154,6 +199,26 @@ const Busca = () => {
                 )}
             </main>
         </div>
+        <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
+                <h2>Buscar por Proximidade</h2>
+                <p>Clique no mapa para definir um ponto central e ajuste o raio da busca.</p>
+                <div style={{height: '300px', marginBottom: '1rem'}}>
+                    <LocationPicker onLocationSelect={setTempLocation} initialPosition={tempLocation} radiusKm={tempRaio} />
+                </div>
+                <div className="form-group">
+                    <label>Raio da Busca (em km)</label>
+                    <input 
+                        type="number" 
+                        value={tempRaio}
+                        onChange={(e) => setTempRaio(e.target.value)}
+                        placeholder="Ex: 20"
+                    />
+                </div>
+                <button type="button" className="btn btn-primary" onClick={handleApplyGeoFilter}>
+                    Aplicar Filtro
+                </button>
+            </Modal>
+        </>
     );
 };
 
