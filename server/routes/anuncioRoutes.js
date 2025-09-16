@@ -337,26 +337,76 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
 // @desc    Buscar todos os an�ncios p�blicos e ativos
 // @access  P�blico
 router.get('/', async (req, res) => {
+    // Extrai todos os possíveis parâmetros da query string
+    const { q, tipo, lat, lng, raio, area, servico } = req.query;
+
+    let query = `
+        SELECT 
+            a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
+            u.nome as nome_usuario,
+            area.nome as nome_area,
+            serv.nome as nome_servico,
+            c.nome as nome_cidade,
+            e.uf as uf_estado
+        FROM Anuncio a
+        JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
+        JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
+        JOIN Servico serv ON a.fk_id_servico = serv.id_servico
+        LEFT JOIN Cidade c ON a.fk_id_cidade = c.id_cidade
+        LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
+    `;
+
+    const conditions = ['a.status = true'];
+    const values = [];
+    let paramIndex = 1;
+
+    // 1. Filtro por Palavra-chave (q)
+    if (q) {
+        conditions.push(`(a.titulo ILIKE $${paramIndex} OR a.descricao ILIKE $${paramIndex})`);
+        values.push(`%${q}%`);
+        paramIndex++;
+    }
+
+    // 2. Filtro por Tipo de Anúncio (O ou S)
+    if (tipo) {
+        conditions.push(`a.tipo = $${paramIndex}`);
+        values.push(tipo.toUpperCase());
+        paramIndex++;
+    }
+
+    // 3. Filtro por Especialização (area)
+    if (area) {
+        conditions.push(`a.fk_Area_id_area = $${paramIndex}`);
+        values.push(area);
+        paramIndex++;
+    }
+
+    // 4. Filtro por Serviço (servico)
+    if (servico) {
+        conditions.push(`a.fk_id_servico = $${paramIndex}`);
+        values.push(servico);
+        paramIndex++;
+    }
+    
+    // 5. Filtro por Proximidade Geográfica (lat, lng, raio)
+    // ST_DWithin é uma função do PostGIS que verifica se geometrias estão dentro de uma distância.
+    if (lat && lng && raio) {
+        conditions.push(`ST_DWithin(a.local, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
+        values.push(lng, lat, raio * 1000); // Raio em metros
+        paramIndex += 3;
+    }
+
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY a.data_publicacao DESC';
+
     try {
-        // Este SQL busca todos os an�ncios e junta (JOIN) com as tabelas de Usu�rio,
-        // �rea e Servi�o para trazer os nomes em vez de apenas os IDs.
-        const query = `
-            SELECT 
-                a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao,
-                u.nome as nome_usuario,
-                area.nome as nome_area,
-                serv.nome as nome_servico
-            FROM Anuncio a
-            JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
-            JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
-            JOIN Servico serv ON a.fk_id_servico = serv.id_servico
-            WHERE a.status = true
-            ORDER BY a.data_publicacao DESC;
-        `;
-        const anuncios = await db.query(query);
+        const anuncios = await db.query(query, values);
         res.json(anuncios.rows);
     } catch (err) {
-        console.error(err.message);
+        console.error("Erro na busca de anúncios:", err.message);
         res.status(500).send('Erro no servidor');
     }
 });

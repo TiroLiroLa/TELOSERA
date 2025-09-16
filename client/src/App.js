@@ -15,6 +15,7 @@ import EditarPerfil from './pages/EditarPerfil';
 import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
 import GerenciarAnuncio from './pages/GerenciarAnuncio';
 import Header from './components/Header';
+import Busca from './pages/Busca';
 
 const AppContent = () => {
     const { isAuthenticated, loading } = useContext(AuthContext);
@@ -40,6 +41,7 @@ const AppContent = () => {
                         <Route path="/anuncios/gerenciar/:id" element={isAuthenticated ? <GerenciarAnuncio /> : <Navigate to="/login" />} />
                         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
                         <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
+                        <Route path="/busca" element={<Busca />} />
                         <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
                         <Route path="/perfil/:id" element={<Perfil />} />
                         <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />

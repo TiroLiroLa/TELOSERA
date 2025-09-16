@@ -1,0 +1,21 @@
+/* client/src/pages/Busca.css */
+.busca-page-container {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+.filtros-sidebar {
+    flex: 1;
+    min-width: 250px;
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+.resultados-main {
+    flex: 3;
+}
+.cards-container { /* Reutiliza o estilo da Home.css */
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
