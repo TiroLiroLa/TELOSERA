@@ -86,13 +86,6 @@ CREATE TABLE Candidatura (
     PRIMARY KEY (fk_id_usuario, fk_id_anuncio)
 );
 
-CREATE TABLE Reclamacao (
-    id_reclamacao serial PRIMARY KEY,
-    descricao text NOT NULL,
-    data_reclamacao timestamptz DEFAULT NOW(),
-    fk_id_usuario int NOT NULL
-);
-
 CREATE TABLE Endereco (
     id_ender serial PRIMARY KEY,
     rua text,
@@ -298,11 +291,6 @@ ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_1
 ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_2
     FOREIGN KEY (fk_id_anuncio)
     REFERENCES Anuncio (id_anuncio)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Reclamacao ADD CONSTRAINT FK_Reclamacao_2
-    FOREIGN KEY (fk_id_usuario)
-    REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
 ALTER TABLE Atua ADD CONSTRAINT FK_Atua_1
