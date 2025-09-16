@@ -1,4 +1,4 @@
-// client/src/pages/GerenciarAnuncio.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
@@ -37,7 +37,6 @@ const GerenciarAnuncio = () => {
             try {
                 const res = await axios.post(`/api/anuncios/${idAnuncio}/confirmar`, { idCandidatoConfirmado: idCandidato });
                 setFeedback(res.data.msg);
-                // Re-busca os dados para atualizar o status do anúncio
                 fetchDados();
             } catch (err) {
                 setError(err.response?.data?.msg || "Não foi possível confirmar o candidato.");
@@ -57,7 +56,7 @@ const GerenciarAnuncio = () => {
 
             {feedback && <div className="success-message">{feedback}</div>}
 
-            <hr style={{margin: '2rem 0'}} />
+            <hr style={{ margin: '2rem 0' }} />
 
             <h3>Lista de Candidatos ({candidatos.length})</h3>
             {candidatos.length > 0 ? (
@@ -72,8 +71,8 @@ const GerenciarAnuncio = () => {
                             </div>
                             <div className="card-actions">
                                 {anuncio.status && (
-                                    <button 
-                                        className="btn btn-primary" 
+                                    <button
+                                        className="btn btn-primary"
                                         onClick={() => handleConfirmar(candidato.id_usuario)}>
                                         Confirmar Serviço
                                     </button>

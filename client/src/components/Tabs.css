@@ -10,7 +10,7 @@
     padding: 0.8rem 1.5rem;
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    margin-bottom: -2px; /* Alinha a borda inferior com a borda do contêiner */
+    margin-bottom: -2px;
     transition: all 0.2s;
 }
 

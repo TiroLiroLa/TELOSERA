@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useContext } from 'react'; // <<< Importar useContext
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import AnuncioCard from '../components/AnuncioCard';
-import './Home.css'; // Vamos criar este arquivo de CSS
-import { AuthContext } from '../context/AuthContext'; // <<< Importar AuthContext
+import './Home.css';
+import { AuthContext } from '../context/AuthContext';
 
 const Home = () => {
   const [anuncios, setAnuncios] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, loading: authLoading } = useContext(AuthContext); // <<< Acessa o contexto
+  const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
   const [tituloOfertas, setTituloOfertas] = useState("Últimas ofertas de trabalho");
 
   useEffect(() => {
@@ -15,26 +15,21 @@ const Home = () => {
       setLoading(true);
       let params = new URLSearchParams();
 
-      // <<< LÓGICA DE PERSONALIZAÇÃO
       if (isAuthenticated) {
         try {
-          // Tenta buscar a localização do usuário logado
           const resRegiao = await axios.get('/api/users/me/regiao');
           const { lat, lng } = resRegiao.data;
-          
-          // Se encontrou, adiciona os parâmetros de busca por distância
+
           params.append('lat', lat);
           params.append('lng', lng);
           params.append('sortBy', 'distance');
           setTituloOfertas("Ofertas de trabalho perto de você");
         } catch (error) {
-          // Se o usuário não tem região cadastrada (erro 404), não faz nada.
-          // A busca continuará por data (padrão).
           console.log("Usuário não possui região de atuação definida.");
           setTituloOfertas("Últimas ofertas de trabalho");
         }
       }
-      
+
       try {
         const resAnuncios = await axios.get(`/api/anuncios?${params.toString()}`);
         setAnuncios(resAnuncios.data);
@@ -45,13 +40,11 @@ const Home = () => {
       }
     };
 
-    // Espera a autenticação carregar antes de buscar os anúncios
     if (!authLoading) {
-        fetchAnuncios();
+      fetchAnuncios();
     }
   }, [isAuthenticated, authLoading]);
 
-  // Filtra os anúncios pelos tipos definidos no seu banco ('O' e 'S')
   const ofertasTrabalho = anuncios.filter(anuncio => anuncio.tipo === 'O');
   const profissionaisDisponiveis = anuncios.filter(anuncio => anuncio.tipo === 'S');
 
