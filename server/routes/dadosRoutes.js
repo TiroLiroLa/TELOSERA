@@ -1,7 +1,7 @@
-// server/routes/dadosRoutes.js
+
 const express = require('express');
 const router = express.Router();
-const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
+const db = require('../config/db');
 
 // @route   GET api/dados/localizacao-por-nome
 // @desc    Buscar IDs de estado e cidade a partir de seus nomes/uf
@@ -37,11 +37,11 @@ router.get('/localizacao-por-nome', async (req, res) => {
 });
 
 // @route   GET api/dados/areas
-// @desc    Buscar todas as �reas de atua��o
-// @access  P�blico
+// @desc    Buscar todas as áreas de atuação
+// @access  Público
 router.get('/areas', async (req, res) => {
     try {
-        const areas = await db.query("SELECT * FROM Area_atuacao ORDER BY nome"); // <<< USA db.query
+        const areas = await db.query("SELECT * FROM Area_atuacao ORDER BY nome");
         res.json(areas.rows);
     } catch (err) {
         console.error(err.message);
@@ -50,11 +50,11 @@ router.get('/areas', async (req, res) => {
 });
 
 // @route   GET api/dados/servicos
-// @desc    Buscar todos os servi�os
-// @access  P�blico
+// @desc    Buscar todos os serviços
+// @access  Público
 router.get('/servicos', async (req, res) => {
     try {
-        const servicos = await db.query("SELECT * FROM Servico ORDER BY nome"); // <<< USA db.query
+        const servicos = await db.query("SELECT * FROM Servico ORDER BY nome");
         res.json(servicos.rows);
     } catch (err) {
         console.error(err.message);
@@ -79,19 +79,19 @@ router.get('/estados', async (req, res) => {
 // @desc    Buscar cidades para autocomplete
 // @access  Público
 router.get('/cidades', async (req, res) => {
-    const { q, estadoId } = req.query; // q = query, estadoId = filtro opcional
+    const { q, estadoId } = req.query;
     if (!q) {
         return res.json([]);
     }
     try {
         let query = "SELECT id_cidade, nome FROM Cidade WHERE nome ILIKE $1";
         const values = [`%${q}%`];
-        
+
         if (estadoId) {
             query += " AND fk_id_estado = $2";
             values.push(estadoId);
         }
-        query += " LIMIT 10"; // Limita para 10 sugestões
+        query += " LIMIT 10";
 
         const cidades = await db.query(query, values);
         res.json(cidades.rows);
@@ -103,24 +103,22 @@ router.get('/cidades', async (req, res) => {
 
 // @route   POST api/dados/cidades
 // @desc    Criar uma nova cidade (se não existir)
-// @access  Público (ou poderia ser Privado)
+// @access  Público
 router.post('/cidades', async (req, res) => {
     const { nome, fk_id_estado } = req.body;
     if (!nome || !fk_id_estado) {
         return res.status(400).json({ msg: 'Nome da cidade e ID do estado são obrigatórios.' });
     }
     try {
-        // 1. Verifica se a cidade já existe naquele estado para evitar duplicatas
         const existe = await db.query(
             "SELECT id_cidade FROM Cidade WHERE nome ILIKE $1 AND fk_id_estado = $2",
             [nome, fk_id_estado]
         );
 
         if (existe.rows.length > 0) {
-            return res.json(existe.rows[0]); // Se já existe, retorna o ID dela
+            return res.json(existe.rows[0]);
         }
 
-        // 2. Se não existe, cria a nova cidade
         const novaCidade = await db.query(
             "INSERT INTO Cidade (nome, fk_id_estado) VALUES ($1, $2) RETURNING id_cidade, nome",
             [nome.trim(), fk_id_estado]

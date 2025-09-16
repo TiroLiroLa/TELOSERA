@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth'); // Nosso middleware de autentica��o
-const authOptional = require('../middleware/authOptional'); // Precisaremos de um novo middleware
-const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
-const upload = require('../middleware/upload'); // <<< Importar o middleware
+const auth = require('../middleware/auth');
+const authOptional = require('../middleware/authOptional');
+const db = require('../config/db');
+const upload = require('../middleware/upload');
 
 // @route   GET /api/anuncios/meus-confirmados
-// @desc    Buscar anúncios que o usuário PUBLICOU e que foram CONFIRMADOS
+// @desc    Buscar anúncios que o usuário publicou e que foram confimados
 // @access  Privado
 router.get('/meus-confirmados', auth, async (req, res) => {
     try {
@@ -25,14 +25,14 @@ router.get('/meus-confirmados', auth, async (req, res) => {
         `;
         const anuncios = await db.query(query, [req.user.id]);
         res.json(anuncios.rows);
-    } catch (err) { 
+    } catch (err) {
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
 });
 
 // @route   GET /api/anuncios/trabalhos-confirmados
-// @desc    Buscar anúncios para os quais o usuário FOI CONFIRMADO
+// @desc    Buscar anúncios para os quais o usuário foi confirmado
 // @access  Privado
 router.get('/trabalhos-confirmados', auth, async (req, res) => {
     try {
@@ -51,7 +51,7 @@ router.get('/trabalhos-confirmados', auth, async (req, res) => {
         `;
         const trabalhos = await db.query(query, [req.user.id]);
         res.json(trabalhos.rows);
-    } catch (err) { 
+    } catch (err) {
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
@@ -111,16 +111,14 @@ router.get('/:id/candidatos', auth, async (req, res) => {
     const idUsuarioLogado = req.user.id;
 
     try {
-        // 1. Verificar se o usuário logado é o dono do anúncio
         const anuncioResult = await db.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
         if (anuncioResult.rows.length === 0) {
             return res.status(404).json({ msg: "Anúncio não encontrado." });
         }
         if (anuncioResult.rows[0].fk_id_usuario !== idUsuarioLogado) {
-            return res.status(403).json({ msg: "Acesso não autorizado." }); // 403 Forbidden
+            return res.status(403).json({ msg: "Acesso não autorizado." });
         }
 
-        // 2. Se for o dono, buscar os candidatos
         const query = `
             SELECT 
                 u.id_usuario, u.nome,
@@ -145,7 +143,7 @@ router.get('/:id/candidatos', auth, async (req, res) => {
 router.post('/:id/confirmar', auth, async (req, res) => {
     const idAnuncio = req.params.id;
     const idUsuarioLogado = req.user.id;
-    const { idCandidatoConfirmado } = req.body; // Recebe o ID do usuário a ser confirmado
+    const { idCandidatoConfirmado } = req.body;
 
     if (!idCandidatoConfirmado) {
         return res.status(400).json({ msg: "ID do candidato é obrigatório." });
@@ -155,28 +153,22 @@ router.post('/:id/confirmar', auth, async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // 1. Verificar se o usuário logado é o dono do anúncio (segurança)
         const anuncioResult = await client.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
         if (anuncioResult.rows.length === 0 || anuncioResult.rows[0].fk_id_usuario !== idUsuarioLogado) {
             await client.query('ROLLBACK');
             return res.status(403).json({ msg: "Operação não autorizada." });
         }
-        
-        // 2. (Opcional, mas recomendado) Verificar se a pessoa que está sendo confirmada realmente se candidatou
+
         const candidaturaResult = await client.query('SELECT * FROM Candidatura WHERE fk_id_anuncio = $1 AND fk_id_usuario = $2', [idAnuncio, idCandidatoConfirmado]);
         if (candidaturaResult.rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ msg: "Este usuário não se candidatou para esta vaga." });
         }
 
-        // 3. Criar o registro na tabela Confirmacao
-        // A tabela 'Confirmacao' precisa do fk_id_usuario, que nesse contexto é o candidato confirmado.
         await client.query(
             'INSERT INTO Confirmacao (fk_id_usuario, fk_id_anuncio) VALUES ($1, $2)',
-            [idCandidatoConfirmado, idAnuncio] // <<< Adiciona o idAnuncio
+            [idCandidatoConfirmado, idAnuncio]
         );
-        
-        // 4. (Opcional) Mudar o status do anúncio para inativo/fechado, já que a vaga foi preenchida
         await client.query('UPDATE Anuncio SET status = false WHERE id_anuncio = $1', [idAnuncio]);
 
         await client.query('COMMIT');
@@ -198,16 +190,16 @@ router.get('/:id/verificar-candidatura', auth, async (req, res) => {
     try {
         const idAnuncio = req.params.id;
         const idUsuario = req.user.id;
-        
+
         const candidatura = await db.query(
             'SELECT * FROM Candidatura WHERE fk_id_usuario = $1 AND fk_id_anuncio = $2',
             [idUsuario, idAnuncio]
         );
-        
+
         if (candidatura.rows.length > 0) {
             return res.json({ candidatado: true });
         }
-        
+
         res.json({ candidatado: false });
     } catch (err) {
         console.error(err.message);
@@ -220,14 +212,12 @@ router.get('/:id/verificar-candidatura', auth, async (req, res) => {
 // @access  Privado
 router.post('/:id/candidatar', auth, async (req, res) => {
     const idAnuncio = req.params.id;
-    const idCandidato = req.user.id; // ID do usuário logado
+    const idCandidato = req.user.id;
 
     const client = await db.pool.connect();
     try {
         await client.query('BEGIN');
 
-        // --- Validações ---
-        // 1. Verificar se o anúncio existe
         const anuncioResult = await client.query('SELECT fk_id_usuario FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
         if (anuncioResult.rows.length === 0) {
             await client.query('ROLLBACK');
@@ -235,13 +225,11 @@ router.post('/:id/candidatar', auth, async (req, res) => {
         }
         const idDonoDoAnuncio = anuncioResult.rows[0].fk_id_usuario;
 
-        // 2. Verificar se o usuário não está se candidatando ao próprio anúncio
         if (idDonoDoAnuncio === idCandidato) {
             await client.query('ROLLBACK');
             return res.status(400).json({ msg: 'Você não pode se candidatar ao seu próprio anúncio.' });
         }
 
-        // 3. Verificar se o usuário já não se candidatou
         const candidaturaExistente = await client.query(
             'SELECT * FROM Candidatura WHERE fk_id_usuario = $1 AND fk_id_anuncio = $2',
             [idCandidato, idAnuncio]
@@ -251,13 +239,11 @@ router.post('/:id/candidatar', auth, async (req, res) => {
             return res.status(400).json({ msg: 'Você já se candidatou para este anúncio.' });
         }
 
-        // --- Inserção ---
-        // Se todas as validações passaram, insere a candidatura
         await client.query(
             'INSERT INTO Candidatura (fk_id_usuario, fk_id_anuncio) VALUES ($1, $2)',
             [idCandidato, idAnuncio]
         );
-        
+
         await client.query('COMMIT');
         res.status(201).json({ msg: 'Candidatura enviada com sucesso!' });
 
@@ -271,15 +257,14 @@ router.post('/:id/candidatar', auth, async (req, res) => {
 });
 
 // @route   GET api/anuncios/:id
-// @desc    Buscar os detalhes de um �nico an�ncio
-// @access  P�blico
+// @desc    Buscar os detalhes de um único anúncio
+// @access  Público
 router.get('/:id', authOptional, async (req, res) => {
     try {
         const idAnuncio = req.params.id;
         const idUsuarioLogado = req.user?.id;
         const { lat, lng } = req.query;
 
-        // --- BUSCA DOS DETALHES COMPLETOS DO ANÚNCIO ---
         const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
@@ -298,11 +283,10 @@ router.get('/:id', authOptional, async (req, res) => {
         `;
         const detalhesResult = await db.query(detalhesQuery, [idAnuncio]);
         if (detalhesResult.rows.length === 0) { return res.status(404).json({ msg: 'Anúncio não encontrado.' }); }
-        
+
         const anuncio = detalhesResult.rows[0];
         const idPublicador = anuncio.id_publicador;
 
-        // --- LÓGICA DE PERMISSÃO ---
         if (anuncio.status === false) {
             const confirmacaoQuery = `SELECT fk_id_usuario FROM Confirmacao WHERE fk_id_anuncio = $1 LIMIT 1`;
             const confirmacaoResult = await db.query(confirmacaoQuery, [idAnuncio]);
@@ -313,8 +297,7 @@ router.get('/:id', authOptional, async (req, res) => {
                 return res.status(403).json({ msg: "Este anúncio está encerrado e não pode ser visualizado." });
             }
         }
-        
-        // --- BUSCA DA AVALIAÇÃO DO PUBLICADOR ---
+
         const avaliacaoQuery = `
             SELECT 
                 COALESCE(AVG((ap.satisfacao + ap.pontualidade) / 2.0), 0) as media_prestador,
@@ -328,25 +311,24 @@ router.get('/:id', authOptional, async (req, res) => {
             GROUP BY u.id_usuario;
         `;
         const avaliacaoResult = await db.query(avaliacaoQuery, [idPublicador]);
-        
+
         let avaliacaoData = { media_geral: 0, total_avaliacoes: 0 };
         if (avaliacaoResult.rows.length > 0) {
             const { media_prestador, media_contratante, total_avaliacoes } = avaliacaoResult.rows[0];
             const somaMedias = parseFloat(media_prestador) + parseFloat(media_contratante);
             const numTiposAvaliacao = (media_prestador > 0 ? 1 : 0) + (media_contratante > 0 ? 1 : 0);
             const media_geral = numTiposAvaliacao > 0 ? somaMedias / numTiposAvaliacao : 0;
-            
+
             avaliacaoData = {
                 media_geral: parseFloat(media_geral.toFixed(1)),
                 total_avaliacoes: parseInt(total_avaliacoes)
             };
         }
 
-        // Adiciona o objeto de avaliação ao resultado final do anúncio
         anuncio.avaliacao = avaliacaoData;
 
         const imagensQuery = await db.query('SELECT id_imagem, caminho_imagem FROM Anuncio_Imagem WHERE fk_id_anuncio = $1', [idAnuncio]);
-        anuncio.imagens = imagensQuery.rows; // Adiciona o array de imagens ao objeto
+        anuncio.imagens = imagensQuery.rows;
 
         res.json(anuncio);
 
@@ -357,10 +339,10 @@ router.get('/:id', authOptional, async (req, res) => {
 });
 
 // @route   GET api/anuncios
-// @desc    Buscar todos os an�ncios p�blicos e ativos
-// @access  P�blico
+// @desc    Buscar todos os anúncios públicos e ativos
+// @access  Público
 router.get('/', async (req, res) => {
-    // Extrai todos os possíveis parâmetros da query string
+
     const { q, tipo, lat, lng, raio, area, servico, sortBy } = req.query;
 
     let query = `
@@ -404,19 +386,16 @@ router.get('/', async (req, res) => {
     if (tipo) { conditions.push(`a.tipo = $${paramIndex}`); values.push(tipo.toUpperCase()); paramIndex++; }
     if (area) { conditions.push(`a.fk_Area_id_area = $${paramIndex}`); values.push(area); paramIndex++; }
     if (servico) { conditions.push(`a.fk_id_servico = $${paramIndex}`); values.push(servico); paramIndex++; }
-    if (lat && lng && raio) { conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`); values.push(lng, lat, raio * 1000); paramIndex += 3; }
+    if (lat && lng && raio) { conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex + 1})::geography, $${paramIndex + 2})`); values.push(lng, lat, raio * 1000); paramIndex += 3; }
     if (conditions.length > 0) {
         query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    // --- Lógica de Ordenação Atualizada ---
     if (sortBy === 'distance' && lat && lng) {
-        query += ' ORDER BY distancia ASC'; 
+        query += ' ORDER BY distancia ASC';
     } else if (sortBy === 'rating') {
-        // Ordena pela média de avaliação (maior primeiro) e depois por data
         query += ' ORDER BY avaliacao_media DESC, a.data_publicacao DESC';
     } else {
-        // Ordenação padrão por data
         query += ' ORDER BY a.data_publicacao DESC';
     }
 
@@ -430,21 +409,18 @@ router.get('/', async (req, res) => {
 });
 
 // @route   POST api/anuncios
-// @desc    Criar um novo anúncio (Versão Aprimorada com Localização)
+// @desc    Criar um novo anúncio
 // @access  Privado
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
-    // <<< 1. FAZ O PARSE DA STRING JSON
     const dadosFormulario = JSON.parse(req.body.jsonData);
 
     const idUsuario = req.user.id;
-    // <<< 2. Extrai os dados do objeto parseado
-    const { 
-        titulo, descricao, tipo, 
-        fk_Area_id_area, fk_id_servico, localizacao, 
-        fk_id_cidade, data_servico 
+    const {
+        titulo, descricao, tipo,
+        fk_Area_id_area, fk_id_servico, localizacao,
+        fk_id_cidade, data_servico
     } = dadosFormulario;
-    
-    // Os arquivos continuam vindo de req.files
+
     const files = req.files;
 
     const client = await db.pool.connect();
@@ -455,17 +431,14 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         if (localizacao && localizacao.lng && localizacao.lat) {
             point = `POINT(${localizacao.lng} ${localizacao.lat})`;
         }
-
-        // A query de inserção permanece a mesma, pois já estava correta
         const novoAnuncioResult = await client.query(
-          `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
+            `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
            VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) 
            RETURNING id_anuncio`,
-          [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
+            [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
         );
         const idAnuncio = novoAnuncioResult.rows[0].id_anuncio;
 
-        // A lógica para salvar as imagens permanece a mesma
         if (files && files.length > 0) {
             const imageInsertPromises = files.map(file => {
                 const imagePath = `/uploads/${file.filename}`;
@@ -481,7 +454,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         res.status(201).json({ msg: 'Anúncio e imagens salvos com sucesso!' });
 
     } catch (err) {
-        // Se ocorrer um erro, deleta os arquivos que foram salvos no disco
         if (files) {
             files.forEach(file => {
                 try {
@@ -500,28 +472,25 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
 });
 
 // @route   DELETE api/anuncios/:id
-// @desc    Deletar um an�ncio
+// @desc    Deletar um anúncio
 // @access  Privado
 router.delete('/:id', auth, async (req, res) => {
-  try {
-    const idAnuncio = req.params.id;
-    const idUsuario = req.user.id;
+    try {
+        const idAnuncio = req.params.id;
+        const idUsuario = req.user.id;
 
-    // 1. Verificar se o an�ncio existe e pertence ao usu�rio
-    const anuncioResult = await db.query('SELECT * FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]); // <<< USA db.query
+        const anuncioResult = await db.query('SELECT * FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
 
-    if (anuncioResult.rows.length === 0) {
-      return res.status(404).json({ msg: 'Anúncio não encontrado.' });
-    }
+        if (anuncioResult.rows.length === 0) {
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
 
-    const anuncio = anuncioResult.rows[0];
-    if (anuncio.fk_id_usuario !== idUsuario) {
-      // Se o ID do dono do an�ncio for diferente do ID do usu�rio fazendo a requisi��o
-      return res.status(401).json({ msg: 'Usuário não autorizado.' });
-    }
+        const anuncio = anuncioResult.rows[0];
+        if (anuncio.fk_id_usuario !== idUsuario) {
 
-    // 2. Se a verifica��o passar, deletar o an�ncio
-    await db.query('DELETE FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]); // <<< USA db.query
+            return res.status(401).json({ msg: 'Usuário não autorizado.' });
+        }
+        await db.query('DELETE FROM Anuncio WHERE id_anuncio = $1', [idAnuncio]);
         res.json({ msg: 'Anúncio removido com sucesso.' });
     } catch (err) {
         console.error(err.message);

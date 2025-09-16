@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from 'react-leaflet';
 
-// Componente interno para gerenciar o marcador e o círculo
 function MapEvents({ onPositionChange, position, radiusKm }) {
   const map = useMapEvents({
     click(e) {
@@ -9,7 +8,6 @@ function MapEvents({ onPositionChange, position, radiusKm }) {
     },
   });
 
-  // Centraliza o mapa na nova posição sempre que ela mudar
   useEffect(() => {
     if (position) {
       map.flyTo(position, map.getZoom());
@@ -20,7 +18,6 @@ function MapEvents({ onPositionChange, position, radiusKm }) {
     return null;
   }
 
-  // Converte o raio de km para metros
   const radiusMeters = radiusKm > 0 ? radiusKm * 1000 : 0;
 
   return (
@@ -38,8 +35,7 @@ const LocationPicker = ({ onLocationSelect, initialPosition, radiusKm }) => {
     setPosition(latlng);
     onLocationSelect(latlng);
   };
-  
-  // Atualiza a posição interna se a prop inicial mudar
+
   useEffect(() => {
     setPosition(initialPosition);
   }, [initialPosition]);
@@ -51,10 +47,10 @@ const LocationPicker = ({ onLocationSelect, initialPosition, radiusKm }) => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
-        <MapEvents 
-          onPositionChange={handlePositionChange} 
+        <MapEvents
+          onPositionChange={handlePositionChange}
           position={position}
-          radiusKm={radiusKm} // Passa o raio para o componente de eventos
+          radiusKm={radiusKm}
         />
       </MapContainer>
       <small>Clique no mapa para definir a sua localização base.</small>

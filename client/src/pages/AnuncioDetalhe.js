@@ -2,24 +2,23 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import './AnuncioDetalhe.css'; // Importa o novo CSS
-import Modal from '../components/Modal'; // Para o mapa
-import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
-import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
-import StarRating from '../components/StarRating'; // <<< Importar
+import './AnuncioDetalhe.css';
+import Modal from '../components/Modal';
+import MoveableMap from '../components/MoveableMap';
+import mapPinIcon from '../assets/map-pin.svg';
+import StarRating from '../components/StarRating';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 
 const AnuncioDetalhe = () => {
-    const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
+    const { id: idAnuncio } = useParams();
     const [isMapModalOpen, setMapModalOpen] = useState(false);
-    const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext); // Pega o authLoading
+    const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext);
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
     const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [lightboxIndex, setLightboxIndex] = useState(0); // Para saber qual imagem abrir
+    const [lightboxIndex, setLightboxIndex] = useState(0);
 
-     // <<< 1. Novo estado para controlar o status da candidatura
     const [statusCandidatura, setStatusCandidatura] = useState({
         carregando: true,
         candidatado: false,
@@ -32,10 +31,8 @@ const AnuncioDetalhe = () => {
                 setLoading(true);
                 let params = new URLSearchParams();
 
-                // <<< LÓGICA DE DISTÂNCIA
                 if (isAuthenticated) {
                     try {
-                        // Tenta buscar a localização do usuário logado
                         const resRegiao = await axios.get('/api/users/me/regiao');
                         const { lat, lng } = resRegiao.data;
                         params.append('lat', lat);
@@ -45,7 +42,6 @@ const AnuncioDetalhe = () => {
                     }
                 }
 
-                // Busca os detalhes do anúncio, passando os params (pode estar vazio)
                 const res = await axios.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
                 setAnuncio(res.data);
 
@@ -56,7 +52,6 @@ const AnuncioDetalhe = () => {
             }
         };
 
-        // Espera a autenticação carregar antes de buscar, para garantir que temos o token
         if (!authLoading) {
             fetchAnuncio();
         }
@@ -65,34 +60,27 @@ const AnuncioDetalhe = () => {
     useEffect(() => {
         const fetchDados = async () => {
             try {
-                // A busca do anúncio em si não depende do login
                 const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
                 setAnuncio(resAnuncio.data);
 
-                // Lógica de candidatura só roda se o usuário estiver logado
                 if (isAuthenticated) {
                     const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
                     if (resCandidatura.data.candidatado) {
                         setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
                     } else {
-                        // <<< CORREÇÃO 1: Caminho para "não candidatado"
                         setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
                     }
                 } else {
-                    // <<< CORREÇÃO 2: Caminho para "não logado"
                     setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
                 }
             } catch (err) {
                 console.error("Erro ao buscar dados:", err);
-                // Também precisamos parar de carregar em caso de erro
                 setStatusCandidatura({ candidatado: false, mensagem: 'Erro ao carregar dados.', carregando: false });
             } finally {
-                // O loading geral da página
                 setLoading(false);
             }
         };
 
-        // Espera a autenticação carregar para saber se faz a chamada de verificação
         if (!authLoading) {
             fetchDados();
         }
@@ -107,7 +95,6 @@ const AnuncioDetalhe = () => {
         return `~${distanceKm.toFixed(1)} km de você`;
     };
 
-    // <<< 3. Função para lidar com o clique no botão
     const handleCandidatar = async () => {
         setStatusCandidatura({ ...statusCandidatura, carregando: true });
         try {
@@ -119,7 +106,7 @@ const AnuncioDetalhe = () => {
             });
         } catch (err) {
             setStatusCandidatura({
-                candidatado: false, // Continua não candidatado
+                candidatado: false,
                 mensagem: err.response?.data?.msg || 'Erro ao se candidatar.',
                 carregando: false
             });
@@ -132,7 +119,6 @@ const AnuncioDetalhe = () => {
 
     const isOwner = user?.id_usuario === anuncio?.id_publicador;
 
-    // --- Lógica de renderização do botão de Ação ---
     const renderActionButton = () => {
         if (!isAuthenticated) {
             return (
@@ -148,28 +134,25 @@ const AnuncioDetalhe = () => {
             return <button className="btn btn-success btn-contact" disabled>{statusCandidatura.mensagem}</button>;
         }
         return (
-            <button 
-                onClick={handleCandidatar} 
+            <button
+                onClick={handleCandidatar}
                 className="btn btn-primary btn-contact"
-                disabled={statusCandidatura.carregando} // Esta linha é a chave
+                disabled={statusCandidatura.carregando}
             >
                 {statusCandidatura.carregando ? 'Enviando...' : 'Candidatar-se'}
             </button>
         );
     };
 
-    // Formata a data do serviço para um formato legível
     const dataServicoFormatada = new Date(anuncio.data_servico).toLocaleDateString('pt-BR', {
         day: '2-digit', month: 'long', year: 'numeric'
     });
     const postadoEm = new Date(anuncio.data_publicacao).toLocaleDateString('pt-BR');
 
-    // Prepara a lista de imagens para o Lightbox. Ele precisa de um array de objetos com a propriedade 'src'.
     const lightboxImages = anuncio.imagens?.map(img => ({
         src: `http://localhost:3001${img.caminho_imagem}`
     })) || [];
-    
-    // Pega as 3 primeiras imagens para exibição na grade
+
     const displayImages = anuncio.imagens ? anuncio.imagens.slice(0, 3) : [];
     const remainingImagesCount = anuncio.imagens ? Math.max(0, anuncio.imagens.length - 3) : 0;
 
@@ -179,86 +162,81 @@ const AnuncioDetalhe = () => {
     };
 
     return (
-      <> 
-        <div className="anuncio-detalhe-page">
-            <main className="anuncio-main">
-                <div className="anuncio-header">
-                    <h1>{anuncio.titulo}</h1>
-                    {/* <<< GALERIA DE IMAGENS REFORMULADA */}
-                    {displayImages.length > 0 && (
-                        <div className="image-gallery">
-                            {displayImages.map((img, index) => {
-                                const isThirdImageWithMore = index === 2 && remainingImagesCount > 0;
-                                const wrapperClass = `gallery-image-wrapper ${isThirdImageWithMore ? 'has-more-images' : ''}`;
-                                const moreCount = `+${remainingImagesCount}`;
+        <>
+            <div className="anuncio-detalhe-page">
+                <main className="anuncio-main">
+                    <div className="anuncio-header">
+                        <h1>{anuncio.titulo}</h1>
+                        {displayImages.length > 0 && (
+                            <div className="image-gallery">
+                                {displayImages.map((img, index) => {
+                                    const isThirdImageWithMore = index === 2 && remainingImagesCount > 0;
+                                    const wrapperClass = `gallery-image-wrapper ${isThirdImageWithMore ? 'has-more-images' : ''}`;
+                                    const moreCount = `+${remainingImagesCount}`;
 
-                                return (
-                                    <div 
-                                        key={img.id_imagem} 
-                                        className={wrapperClass}
-                                        {...(isThirdImageWithMore && { 'data-more-count': moreCount })}
-                                        // <<< 3. Adiciona o onClick para abrir o Lightbox
-                                        onClick={() => openLightbox(index)}
-                                    >
-                                        <img 
-                                            src={`http://localhost:3001${img.caminho_imagem}`} 
-                                            alt={`Imagem ${index + 1} do anúncio`}
-                                            className="gallery-image"
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                    <p className="anuncio-subheader">
-                        Postado por <Link to={`/perfil/${anuncio.id_publicador}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
-                        {anuncio.nome_cidade && (
-                            <>
-                                {' - '}
-                                <a href="#" onClick={(e) => { e.preventDefault(); setMapModalOpen(true); }}>
-                                    {anuncio.nome_cidade}, {anuncio.uf_estado} 📍
-                                </a>
-                            </>
+                                    return (
+                                        <div
+                                            key={img.id_imagem}
+                                            className={wrapperClass}
+                                            {...(isThirdImageWithMore && { 'data-more-count': moreCount })}
+                                            onClick={() => openLightbox(index)}
+                                        >
+                                            <img
+                                                src={`http://localhost:3001${img.caminho_imagem}`}
+                                                alt={`Imagem ${index + 1} do anúncio`}
+                                                className="gallery-image"
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         )}
-                        {distanciaFormatada && (
-                            <span className="card-location-tag" style={{marginLeft: '1rem'}}>
-                                <img src={mapPinIcon} alt="Ícone de localização" />
-                                <span>{distanciaFormatada}</span>
-                            </span>
-                        )}
-                    </p>
-                </div>
-                
-                {/* Futuramente, a galeria de imagens viria aqui */}
+                        <p className="anuncio-subheader">
+                            Postado por <Link to={`/perfil/${anuncio.id_publicador}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
+                            {anuncio.nome_cidade && (
+                                <>
+                                    {' - '}
+                                    <a href="#" onClick={(e) => { e.preventDefault(); setMapModalOpen(true); }}>
+                                        {anuncio.nome_cidade}, {anuncio.uf_estado} 📍
+                                    </a>
+                                </>
+                            )}
+                            {distanciaFormatada && (
+                                <span className="card-location-tag" style={{ marginLeft: '1rem' }}>
+                                    <img src={mapPinIcon} alt="Ícone de localização" />
+                                    <span>{distanciaFormatada}</span>
+                                </span>
+                            )}
+                        </p>
+                    </div>
 
-                <section className="anuncio-section">
-                    <h2>Descrição</h2>
-                    {/* Usamos <pre> para manter as quebras de linha da descrição */}
-                    <pre style={{whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '1rem'}}>{anuncio.descricao}</pre>
-                </section>
+                    <section className="anuncio-section">
+                        <h2>Descrição</h2>
+                        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '1rem' }}>{anuncio.descricao}</pre>
+                    </section>
 
-                <section className="anuncio-section">
-                    <h2>Detalhes do Serviço</h2>
-                    <ul className="details-list">
-                        <li>
-                            <strong>Data de Início</strong>
-                            {dataServicoFormatada}
-                        </li>
-                        <li>
-                            <strong>Tipo de Anúncio</strong>
-                            {anuncio.tipo === 'O' ? 'Oferta de Vaga' : 'Oferta de Serviço'}
-                        </li>
-                        <li>
-                            <strong>Especialização</strong>
-                            {anuncio.nome_area}
-                        </li>
-                        <li>
-                            <strong>Serviço Principal</strong>
-                            {anuncio.nome_servico}
-                        </li>
-                    </ul>
-                </section>
-            </main>
+                    <section className="anuncio-section">
+                        <h2>Detalhes do Serviço</h2>
+                        <ul className="details-list">
+                            <li>
+                                <strong>Data de Início</strong>
+                                {dataServicoFormatada}
+                            </li>
+                            <li>
+                                <strong>Tipo de Anúncio</strong>
+                                {anuncio.tipo === 'O' ? 'Oferta de Vaga' : 'Oferta de Serviço'}
+                            </li>
+                            <li>
+                                <strong>Especialização</strong>
+                                {anuncio.nome_area}
+                            </li>
+                            <li>
+                                <strong>Serviço Principal</strong>
+                                {anuncio.nome_servico}
+                            </li>
+                        </ul>
+                    </section>
+                </main>
 
                 <aside className="anuncio-sidebar">
                     <div className="info-box">
@@ -269,38 +247,32 @@ const AnuncioDetalhe = () => {
                         <p>{anuncio.nome_usuario}</p>
 
                         {anuncio.avaliacao && (
-                                <div className="sidebar-rating">
+                            <div className="sidebar-rating">
                                 <StarRating rating={anuncio.avaliacao.media_geral} />
                                 <span> ({anuncio.avaliacao.total_avaliacoes})</span>
                             </div>
                         )}
 
-                        {/* <<< 3. Seção de Contato Direto */}
                         <div className="contact-details">
                             <h4>Contato Direto</h4>
                             <p><strong>E-mail:</strong> {anuncio.email_usuario || "Não informado"}</p>
                             <p><strong>Telefone:</strong> {anuncio.telefone_usuario || "Não informado"}</p>
                         </div>
-                        
-                        {/* <<< 4. Botão principal agora é "Acessar Perfil" */}
+
                         <Link to={`/perfil/${anuncio.id_publicador}`} className="btn btn-primary btn-contact">
                             Acessar Perfil Completo
                         </Link>
-                        {/* <<< 4. Renderiza o botão de ação dinâmico */}
                         {renderActionButton()}
-                        {/* Mostra mensagem de erro, se houver */}
                         {!statusCandidatura.candidatado && statusCandidatura.mensagem && (
-                            <p style={{color: 'red', marginTop: '1rem'}}>{statusCandidatura.mensagem}</p>
+                            <p style={{ color: 'red', marginTop: '1rem' }}>{statusCandidatura.mensagem}</p>
                         )}
                     </div>
                 </aside>
             </div>
 
-            {/* <<< 5. O Modal do Mapa */}
             {anuncio.localizacao && (
                 <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
                     <h2>Localização do Serviço</h2>
-                    {/* Usamos um raio fixo pequeno (ex: 0.5 km) apenas para centralizar o marcador */}
                     <MoveableMap location={anuncio.localizacao} raio={0.01} />
                 </Modal>
             )}

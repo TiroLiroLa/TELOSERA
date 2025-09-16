@@ -4,7 +4,7 @@
     background-color: #fff;
     padding: 2.5rem;
     border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .criar-anuncio-container h1 {
@@ -13,7 +13,6 @@
     margin-bottom: 2rem;
 }
 
-/* Estilo para o Datepicker */
 .react-datepicker-wrapper,
 .react-datepicker__input-container {
     width: 100%;
@@ -26,18 +25,19 @@
     border-radius: 5px;
     box-sizing: border-box;
     font-size: 1rem;
-    background-color: white; /* Garante fundo branco */
+    background-color: white;
 }
 
-/* (Pode reutilizar os outros estilos de form-group, btn, etc. do Cadastro.css ou Login.css) */
 .form-group {
     margin-bottom: 1.5rem;
 }
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -48,6 +48,7 @@
     box-sizing: border-box;
     font-size: 1rem;
 }
+
 .btn {
     padding: 0.8rem 1.5rem;
     border: none;
@@ -63,12 +64,13 @@
     background-color: #fa5700;
     color: white;
 }
+
 .error-message {
-    background-color: #f8d7da; /* Fundo avermelhado claro */
-    color: #721c24; /* Texto vermelho escuro */
-    border: 1px solid #f5c6cb; /* Borda vermelha clara */
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
     padding: 0.75rem 1.25rem;
-    margin-bottom: 1rem; /* Espaçamento antes dos campos de input */
+    margin-bottom: 1rem;
     border-radius: 5px;
     text-align: center;
     font-size: 0.9rem;

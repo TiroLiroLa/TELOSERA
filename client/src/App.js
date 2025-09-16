@@ -4,15 +4,15 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import Cadastro from './pages/Cadastro';
 import Login from './pages/Login';
 import './App.css';
-import { useEffect, useState } from 'react'; // Importe useState e useEffect
-import axios from 'axios'; // Importe axios
-import './components/Styles.css'; // <<< IMPORTA O NOVO CSS
-import Home from './pages/Home'; // <<< IMPORTA A NOVA P�GINA HOME
-import Dashboard from './pages/Dashboard'; // <<< 1. IMPORTA o novo componente Dashboard
-import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import './components/Styles.css';
+import Home from './pages/Home';
+import Dashboard from './pages/Dashboard';
+import AnuncioDetalhe from './pages/AnuncioDetalhe';
 import Perfil from './pages/Perfil';
 import EditarPerfil from './pages/EditarPerfil';
-import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
+import CriarAnuncio from './pages/CriarAnuncio';
 import GerenciarAnuncio from './pages/GerenciarAnuncio';
 import Header from './components/Header';
 import Busca from './pages/Busca';
@@ -23,17 +23,15 @@ const AppContent = () => {
     if (loading) {
         return <div>Carregando...</div>;
     }
-    
+
     return (
 
-         
+
 
         <Router>
             <div className="App">
-                <Header /> {/* <<< Usa o componente Header reutilizável */}
+                <Header />
                 <main>
-                    {/* A lógica de proteção de rotas aqui dentro permanece a mesma.
-                        Ela é a responsável por redirecionar o usuário. */}
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
@@ -53,13 +51,12 @@ const AppContent = () => {
     );
 };
 
-// Componente principal que usa o Provedor
 function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+    return (
+        <AuthProvider>
+            <AppContent />
+        </AuthProvider>
+    );
 }
 
 export default App;

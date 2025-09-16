@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 
 const AnuncioDashboardCard = ({ anuncio, tipo, onAvaliarClick }) => {
     const dataFormatada = new Date(anuncio.data_confirmacao || anuncio.data_candidatura || anuncio.data_publicacao).toLocaleDateString('pt-BR');
-    
-    // --- Bloco para "Meus Anúncios Publicados" ---
+
     if (tipo === 'publicado') {
         return (
             <div className="anuncio-dashboard-card">
@@ -22,13 +21,11 @@ const AnuncioDashboardCard = ({ anuncio, tipo, onAvaliarClick }) => {
         );
     }
 
-    // --- Bloco para "Minhas Candidaturas" ---
     if (tipo === 'candidatura') {
         return (
             <div className="anuncio-dashboard-card">
                 <div className="card-info">
                     <h3><Link to={`/anuncio/${anuncio.id_anuncio}`}>{anuncio.titulo}</Link></h3>
-                    {/* A query para esta rota precisaria ser padronizada para 'nome_outro_usuario' também */}
                     <p>Candidatou-se em: {dataFormatada} | Publicado por: {anuncio.nome_empresa || anuncio.nome_outro_usuario}</p>
                 </div>
                 <div className="card-actions">
@@ -38,9 +35,7 @@ const AnuncioDashboardCard = ({ anuncio, tipo, onAvaliarClick }) => {
         );
     }
 
-    // --- Bloco para "Confirmados" ---
     if (tipo === 'confirmado') {
-        // Define o label com base na informação vinda do backend
         const label = anuncio.papel_outro_usuario === 'candidato' ? 'Candidato selecionado' : 'Contratante';
 
         return (
@@ -59,7 +54,7 @@ const AnuncioDashboardCard = ({ anuncio, tipo, onAvaliarClick }) => {
             </div>
         );
     }
-    
+
     return null;
 };
 
