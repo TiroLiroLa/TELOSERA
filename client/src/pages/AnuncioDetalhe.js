@@ -5,11 +5,12 @@ import { AuthContext } from '../context/AuthContext';
 import './AnuncioDetalhe.css'; // Importa o novo CSS
 import Modal from '../components/Modal'; // Para o mapa
 import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
+import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
     const [isMapModalOpen, setMapModalOpen] = useState(false);
-    const { isAuthenticated, user } = useContext(AuthContext);
+    const { isAuthenticated, loading: authLoading, user } = useContext(AuthContext); // <<< Pega o status de loading da auth
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -23,27 +24,47 @@ const AnuncioDetalhe = () => {
     useEffect(() => {
         const fetchAnuncio = async () => {
             try {
-                const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
-                setAnuncio(resAnuncio.data);
+                setLoading(true);
+                let params = new URLSearchParams();
 
-                // <<< 2. Se o usuário estiver logado, verifica se ele já se candidatou
+                // <<< LÓGICA DE DISTÂNCIA
                 if (isAuthenticated) {
-                    // (Esta rota de verificação precisa ser criada)
-                    const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
-                    if (resCandidatura.data.candidatado) {
-                        setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
+                    try {
+                        // Tenta buscar a localização do usuário logado
+                        const resRegiao = await axios.get('/api/users/me/regiao');
+                        const { lat, lng } = resRegiao.data;
+                        params.append('lat', lat);
+                        params.append('lng', lng);
+                    } catch (error) {
+                        console.log("Usuário sem região, não será possível calcular a distância.");
                     }
                 }
+
+                // Busca os detalhes do anúncio, passando os params (pode estar vazio)
+                const res = await axios.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
+                setAnuncio(res.data);
 
             } catch (err) {
                 console.error("Erro ao buscar detalhes do anúncio:", err);
             } finally {
                 setLoading(false);
-                setStatusCandidatura(prev => ({ ...prev, carregando: false }));
             }
         };
-        fetchAnuncio();
-    }, [idAnuncio, isAuthenticated]);
+
+        // Espera a autenticação carregar antes de buscar, para garantir que temos o token
+        if (!authLoading) {
+            fetchAnuncio();
+        }
+    }, [idAnuncio, isAuthenticated, authLoading]);
+
+    const formatDistance = (distanceMeters) => {
+        if (!distanceMeters) return null;
+        const distanceKm = distanceMeters / 1000;
+        if (distanceKm < 1) {
+            return `${Math.round(distanceMeters)} m de você`;
+        }
+        return `~${distanceKm.toFixed(1)} km de você`;
+    };
 
     // <<< 3. Função para lidar com o clique no botão
     const handleCandidatar = async () => {
@@ -66,6 +87,7 @@ const AnuncioDetalhe = () => {
 
     if (loading) return <div className="container">Carregando...</div>;
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
+    const distanciaFormatada = formatDistance(anuncio.distancia);
 
     const isOwner = user?.id_usuario === anuncio?.id_usuario;
 
@@ -116,6 +138,12 @@ const AnuncioDetalhe = () => {
                                     {anuncio.nome_cidade}, {anuncio.uf_estado} 📍
                                 </a>
                             </>
+                        )}
+                        {distanciaFormatada && (
+                            <span className="card-location-tag" style={{marginLeft: '1rem'}}>
+                                <img src={mapPinIcon} alt="Ícone de localização" />
+                                <span>{distanciaFormatada}</span>
+                            </span>
                         )}
                     </p>
                 </div>

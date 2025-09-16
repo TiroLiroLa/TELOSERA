@@ -278,6 +278,9 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         const idAnuncio = req.params.id;
         const idUsuarioLogado = req.user?.id; // Pode ser undefined se não houver login
 
+        // <<< 1. Pega lat/lng da query string, se enviados pelo frontend
+        const { lat, lng } = req.query;
+
         // 1. Busca os dados essenciais do anúncio primeiro
         const anuncioBaseQuery = `
             SELECT 
@@ -307,7 +310,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
             }
         }
         
-        // 3. Se a permissão foi concedida (anúncio ativo OU usuário autorizado), busca os detalhes completos
+        // 2. A query de detalhes agora calcula a distância condicionalmente
         const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
@@ -315,6 +318,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
                 u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
                 area.nome as nome_area, serv.nome as nome_servico,
                 c.nome as nome_cidade, e.uf as uf_estado
+                ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
             FROM Anuncio a
             JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
             JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
@@ -325,6 +329,10 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         `;
         const detalhesResult = await db.query(detalhesQuery, [idAnuncio]);
 
+        if (detalhesResult.rows.length === 0) {
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
+        
         res.json(detalhesResult.rows[0]);
 
     } catch (err) {
