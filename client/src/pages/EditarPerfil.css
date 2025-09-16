@@ -1,12 +1,9 @@
-/* client/src/pages/EditarPerfil.css */
-
 .edit-perfil-container {
     display: flex;
     gap: 2rem;
     align-items: flex-start;
 }
 
-/* Sidebar de Navegação */
 .edit-perfil-sidebar {
     flex: 1;
     min-width: 250px;
@@ -18,8 +15,8 @@
     margin: 0;
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    overflow: hidden; /* Garante que o border-radius seja aplicado nos filhos */
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
 }
 
 .edit-perfil-nav li a {
@@ -43,7 +40,6 @@
     color: #fa5700;
 }
 
-/* Conteúdo Principal com os Formulários */
 .edit-perfil-main {
     flex: 3;
 }
@@ -52,7 +48,7 @@
     background-color: #fff;
     padding: 2rem;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .edit-section h2 {
@@ -61,15 +57,16 @@
     border-bottom: 1px solid #eee;
 }
 
-/* Estilos de formulário (reutilizáveis) */
 .form-group {
     margin-bottom: 1.5rem;
 }
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
 }
+
 .form-group input,
 .form-group select {
     width: 100%;
@@ -79,7 +76,6 @@
     box-sizing: border-box;
 }
 
-/* Estilos para a seção de especialidades (checkboxes) */
 .especialidades-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

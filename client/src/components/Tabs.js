@@ -1,6 +1,6 @@
-// client/src/components/Tabs.js
+
 import React, { useState } from 'react';
-import './Tabs.css'; // Vamos criar este CSS
+import './Tabs.css';
 
 const Tabs = ({ children }) => {
     const [activeTab, setActiveTab] = useState(children[0].props.label);
@@ -36,7 +36,6 @@ const Tabs = ({ children }) => {
     );
 };
 
-// O componente Tab é apenas um contêiner para o conteúdo de cada aba.
 const Tab = ({ label, children }) => {
     return <div label={label}>{children}</div>;
 };

@@ -1,11 +1,11 @@
-// client/src/pages/Dashboard.js
+
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { Tabs, Tab } from '../components/Tabs'; // Reutilizando nosso componente de abas
+import { Tabs, Tab } from '../components/Tabs';
 import AnuncioDashboardCard from '../components/AnuncioDashboardCard';
-import './Dashboard.css'; // Importando o novo CSS
-import AvaliacaoModal from '../components/AvaliacaoModal'; // <<< Importar
+import './Dashboard.css';
+import AvaliacaoModal from '../components/AvaliacaoModal';
 
 const Dashboard = () => {
     const { user } = useContext(AuthContext);
@@ -33,7 +33,7 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-        }, [user]);
+    }, [user]);
 
     useEffect(() => {
         if (user) { fetchDashboardData(); }
@@ -49,7 +49,7 @@ const Dashboard = () => {
     const handleAvaliacaoSuccess = () => {
         setIsAvaliacaoModalOpen(false);
         setAvaliacaoTarget(null);
-        fetchDashboardData(); // Recarrega os dados para atualizar o status do botão
+        fetchDashboardData();
     };
 
     return (
@@ -88,7 +88,7 @@ const Dashboard = () => {
                     )}
                 </Tab>
             </Tabs>
-            <AvaliacaoModal 
+            <AvaliacaoModal
                 isOpen={isAvaliacaoModalOpen}
                 onClose={() => setIsAvaliacaoModalOpen(false)}
                 avaliacaoTarget={avaliacaoTarget}

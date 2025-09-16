@@ -1,4 +1,4 @@
-// client/src/components/AvaliacaoModal.js
+
 import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -19,22 +19,22 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
     };
 
     const handleSubmit = async (e) => {
-    e.preventDefault();
-    const dadosParaEnviar = {
-        idConfirmacao: avaliacaoTarget.id_confirmacao, // <<< Esta linha deve existir
-        idUsuarioAvaliado: avaliacaoTarget.id_outro_usuario,
-        tipoAvaliacao: isEmpresaAvaliando ? 'P' : 'C',
-        comentario: formData.comentario,
-        nota1: formData.nota1,
-        nota2: formData.nota2
+        e.preventDefault();
+        const dadosParaEnviar = {
+            idConfirmacao: avaliacaoTarget.id_confirmacao,
+            idUsuarioAvaliado: avaliacaoTarget.id_outro_usuario,
+            tipoAvaliacao: isEmpresaAvaliando ? 'P' : 'C',
+            comentario: formData.comentario,
+            nota1: formData.nota1,
+            nota2: formData.nota2
+        };
+        try {
+            await axios.post('/api/avaliacoes', dadosParaEnviar);
+            onSuccess();
+        } catch (err) {
+            setError(err.response?.data?.msg || "Erro ao enviar avaliação.");
+        }
     };
-    try {
-        await axios.post('/api/avaliacoes', dadosParaEnviar);
-        onSuccess();
-    } catch (err) {
-        setError(err.response?.data?.msg || "Erro ao enviar avaliação.");
-    }
-};
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
@@ -42,15 +42,15 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label>{textosUI.labelNota1} (1 a 5)</label>
-                    <input type="number" min="1" max="5" value={formData.nota1} onChange={e => setFormData({...formData, nota1: e.target.value})} />
+                    <input type="number" min="1" max="5" value={formData.nota1} onChange={e => setFormData({ ...formData, nota1: e.target.value })} />
                 </div>
                 <div className="form-group">
                     <label>{textosUI.labelNota2} (1 a 5)</label>
-                    <input type="number" min="1" max="5" value={formData.nota2} onChange={e => setFormData({...formData, nota2: e.target.value})} />
+                    <input type="number" min="1" max="5" value={formData.nota2} onChange={e => setFormData({ ...formData, nota2: e.target.value })} />
                 </div>
                 <div className="form-group">
                     <label>Comentário</label>
-                    <textarea rows="4" value={formData.comentario} onChange={e => setFormData({...formData, comentario: e.target.value})} />
+                    <textarea rows="4" value={formData.comentario} onChange={e => setFormData({ ...formData, comentario: e.target.value })} />
                 </div>
                 {error && <p className="error-message">{error}</p>}
                 <button type="submit" className="btn btn-primary">Enviar Avaliação</button>

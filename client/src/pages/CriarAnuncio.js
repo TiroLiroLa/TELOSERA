@@ -4,21 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { AuthContext } from '../context/AuthContext';
-
-// Componentes
 import LocationPicker from '../components/LocationPicker';
 import Modal from '../components/Modal';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
-
-// CSS
 import './CriarAnuncio.css';
 
 const CriarAnuncio = () => {
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-
-    // Estado do formulário principal
     const [formData, setFormData] = useState({
         titulo: '',
         descricao: '',
@@ -26,8 +20,7 @@ const CriarAnuncio = () => {
         fk_Area_id_area: '',
         fk_id_servico: '',
     });
-    
-    // Estados para campos especiais
+
     const [areas, setAreas] = useState([]);
     const [servicos, setServicos] = useState([]);
     const [dataServico, setDataServico] = useState(new Date());
@@ -35,7 +28,6 @@ const CriarAnuncio = () => {
     const [previewImages, setPreviewImages] = useState([]);
     const [errors, setErrors] = useState({});
 
-    // Estados para o modal de localização
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [location, setLocation] = useState(null);
     const [estados, setEstados] = useState([]);
@@ -43,7 +35,6 @@ const CriarAnuncio = () => {
     const [regiaoCity, setRegiaoCity] = useState(null);
 
     useEffect(() => {
-        // Busca dados para os dropdowns
         const fetchData = async () => {
             try {
                 const [resAreas, resServicos, resEstados] = await Promise.all([
@@ -64,47 +55,37 @@ const CriarAnuncio = () => {
             const filesArray = Array.from(e.target.files);
             if (filesArray.length > 5) {
                 alert("Você pode selecionar no máximo 5 imagens.");
-                // Limpa a seleção para evitar envio incorreto
-                e.target.value = null; 
+                e.target.value = null;
                 return;
             }
             setSelectedFiles(filesArray);
-            
-            // Limpa previews antigos antes de criar novos
+
             previewImages.forEach(url => URL.revokeObjectURL(url));
-            
+
             const previewUrls = filesArray.map(file => URL.createObjectURL(file));
             setPreviewImages(previewUrls);
         }
     };
-    
+
     const onSubmit = async (e) => {
         e.preventDefault();
-        
-        // --- PREPARAÇÃO DOS DADOS ---
+
         const dadosFormulario = {
             ...formData,
             data_servico: dataServico.toISOString(),
             fk_id_cidade: regiaoCity?.id_cidade,
-            localizacao: location // Mantém como objeto aqui
+            localizacao: location
         };
 
-        // --- MONTAGEM DO FORMDATA ---
         const data = new FormData();
-        
-        // 1. Anexa os arquivos de imagem
-        // 'images' deve ser o mesmo nome de campo usado no middleware multer
+
         for (let i = 0; i < selectedFiles.length; i++) {
             data.append('images', selectedFiles[i]);
         }
-        
-        // 2. Anexa todos os outros dados como uma única string JSON
-        // O backend irá receber isso e fará o parse.
+
         data.append('jsonData', JSON.stringify(dadosFormulario));
 
         try {
-            // A requisição com FormData NÃO deve ter o header 'Content-Type' setado manualmente
-            // O navegador fará isso por nós, incluindo o 'boundary' correto.
             await axios.post('/api/anuncios', data);
             alert('Anúncio criado com sucesso!');
             navigate('/dashboard');
@@ -113,7 +94,6 @@ const CriarAnuncio = () => {
         }
     };
 
-    // --- Funções Auxiliares (sem alteração) ---
     const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
     const handleCreateCity = async (cityName, estadoId) => {
         if (!estadoId) { alert("Selecione um estado."); return null; }
@@ -124,7 +104,6 @@ const CriarAnuncio = () => {
     };
     const onLocationSelect = (latlng) => { setLocation(latlng); };
 
-    // Textos dinâmicos para a UI
     const isOfertaDeVaga = formData.tipo === 'O';
     const textosUI = {
         tituloPagina: isOfertaDeVaga ? "Publicar Nova Vaga" : "Oferecer Meus Serviços",
@@ -136,7 +115,7 @@ const CriarAnuncio = () => {
         botaoSubmit: isOfertaDeVaga ? "Publicar Vaga" : "Publicar Disponibilidade"
     };
 
-  return (
+    return (
         <div className="criar-anuncio-container">
             <h1>{textosUI.tituloPagina || 'Publicar Anúncio'}</h1>
             <form onSubmit={onSubmit} noValidate>
@@ -186,7 +165,7 @@ const CriarAnuncio = () => {
                 </div>
 
                 {/* --- Upload de Imagens --- */}
-                <hr style={{margin: "1rem 0"}}/>
+                <hr style={{ margin: "1rem 0" }} />
                 <h3>Imagens do Anúncio (até 5)</h3>
                 <div className="form-group">
                     <input type="file" multiple accept="image/*" onChange={handleFileChange} />
@@ -196,15 +175,15 @@ const CriarAnuncio = () => {
                         <img key={index} src={url} alt={`Preview ${index}`} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '5px' }} />
                     ))}
                 </div>
-                
+
                 {/* --- Localização --- */}
-                <hr style={{margin: "1rem 0"}}/>
+                <hr style={{ margin: "1rem 0" }} />
                 <h3>{textosUI.labelLocal || 'Localização'}</h3>
                 {regiaoCity && <div className="summary-box">Cidade definida: <strong>{regiaoCity.nome}</strong></div>}
-                <button type="button" onClick={() => setIsModalOpen(true)} style={{marginBottom: '1.5rem'}}>
+                <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }}>
                     {regiaoCity ? 'Alterar Localização' : 'Definir Localização'}
                 </button>
-                
+
                 <button type="submit" className="btn btn-primary">{textosUI.botaoSubmit || 'Publicar'}</button>
             </form>
 
@@ -225,15 +204,15 @@ const CriarAnuncio = () => {
                         </div>
                     </Tab>
                     <Tab label="2. Ponto no Mapa">
-                         <div className="form-group">
+                        <div className="form-group">
                             <label>Ponto Exato (Opcional)</label>
-                            <div style={{height: '250px'}}> 
+                            <div style={{ height: '250px' }}>
                                 <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} />
                             </div>
                         </div>
                     </Tab>
                 </Tabs>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-primary" style={{marginTop: '2rem'}}>Confirmar</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-primary" style={{ marginTop: '2rem' }}>Confirmar</button>
             </Modal>
         </div>
     );
