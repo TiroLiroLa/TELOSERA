@@ -15,9 +15,9 @@
   background: white;
   padding: 2rem;
   border-radius: 8px;
-  max-width: 90vw; /* Adicionado para responsividade em telas menores */
-  max-height: 85vh; /* Garante que a altura não ultrapasse 85% da tela */
-  overflow-y: auto; /* Adiciona a barra de rolagem vertical quando necessário */
+  max-width: 90vw; 
+  max-height: 85vh;
+  overflow-y: auto; 
   position: relative;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
