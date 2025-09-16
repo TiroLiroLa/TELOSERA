@@ -76,7 +76,8 @@ CREATE TABLE Avaliacao_prestador (
 CREATE TABLE Confirmacao (
     id_confirmacao serial PRIMARY KEY,
     data_confirmacao timestamptz DEFAULT NOW(),
-    fk_id_usuario int NOT NULL
+    fk_id_usuario int NOT NULL,
+    fk_id_anuncio int
 );
 
 CREATE TABLE Candidatura (
@@ -278,6 +279,11 @@ ALTER TABLE Avaliacao_prestador ADD CONSTRAINT FK_Avaliacao_prestador_2
     REFERENCES Avaliacao (id_avaliacao)
     ON DELETE CASCADE;
  
+ALTER TABLE Confirmacao ADD CONSTRAINT FK_Confirmacao_Anuncio
+    FOREIGN KEY (fk_id_anuncio)
+    REFERENCES Anuncio (id_anuncio)
+    ON DELETE CASCADE;
+    
 ALTER TABLE Confirmacao ADD CONSTRAINT FK_Confirmacao_2
     FOREIGN KEY (fk_id_usuario)
     REFERENCES Usuario (id_usuario)

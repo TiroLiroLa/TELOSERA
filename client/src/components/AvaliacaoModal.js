@@ -13,28 +13,28 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
 
     const isEmpresaAvaliando = user?.tipo_usuario === 'E';
     const textosUI = {
-        titulo: isEmpresaAvaliando ? `Avaliar ${avaliacaoTarget.nome_candidato}` : `Avaliar ${avaliacaoTarget.nome_empresa}`,
+        titulo: `Avaliar ${avaliacaoTarget.nome_outro_usuario}`,
         labelNota1: isEmpresaAvaliando ? 'Satisfação com o Serviço' : 'Clareza da Demanda',
         labelNota2: isEmpresaAvaliando ? 'Pontualidade' : 'Pontualidade do Pagamento'
     };
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        const dadosParaEnviar = {
-            idAnuncio: avaliacaoTarget.id_anuncio,
-            idUsuarioAvaliado: isEmpresaAvaliando ? avaliacaoTarget.id_candidato : avaliacaoTarget.id_empresa,
-            tipoAvaliacao: isEmpresaAvaliando ? 'P' : 'C',
-            comentario: formData.comentario,
-            nota1: formData.nota1,
-            nota2: formData.nota2
-        };
-        try {
-            await axios.post('/api/avaliacoes', dadosParaEnviar);
-            onSuccess(); // Informa o componente pai para recarregar os dados
-        } catch (err) {
-            setError(err.response?.data?.msg || "Erro ao enviar avaliação.");
-        }
+    e.preventDefault();
+    const dadosParaEnviar = {
+        idConfirmacao: avaliacaoTarget.id_confirmacao, // <<< Esta linha deve existir
+        idUsuarioAvaliado: avaliacaoTarget.id_outro_usuario,
+        tipoAvaliacao: isEmpresaAvaliando ? 'P' : 'C',
+        comentario: formData.comentario,
+        nota1: formData.nota1,
+        nota2: formData.nota2
     };
+    try {
+        await axios.post('/api/avaliacoes', dadosParaEnviar);
+        onSuccess();
+    } catch (err) {
+        setError(err.response?.data?.msg || "Erro ao enviar avaliação.");
+    }
+};
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>

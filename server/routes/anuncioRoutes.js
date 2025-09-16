@@ -10,23 +10,21 @@ const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 router.get('/meus-confirmados', auth, async (req, res) => {
     try {
         const query = `
-        SELECT 
-            a.id_anuncio, a.titulo, conf.data_confirmacao,
-            cand.id_usuario as id_candidato, cand.nome as nome_candidato,
-            (SELECT COUNT(*) > 0 FROM Avaliacao av 
-             WHERE av.fk_id_avaliador = a.fk_id_usuario AND av.fk_id_avaliado = cand.id_usuario
-             AND av.fk_id_confirmacao = conf.id_confirmacao
-            ) as avaliacao_realizada
-            FROM Anuncio a
-            JOIN Candidatura c ON a.id_anuncio = c.fk_id_anuncio
-            JOIN Confirmacao conf ON c.fk_id_usuario = conf.fk_id_usuario
-            JOIN Usuario cand ON conf.fk_id_usuario = cand.id_usuario
-            WHERE a.fk_id_usuario = $1 AND a.status = false
-            ORDER BY conf.data_confirmacao DESC;
+            SELECT 
+                a.id_anuncio, a.titulo,
+                conf.id_confirmacao, conf.data_confirmacao,
+                candidato.id_usuario as id_outro_usuario, 
+                candidato.nome as nome_outro_usuario,
+                'candidato' as papel_outro_usuario,
+                (SELECT COUNT(*) > 0 FROM Avaliacao av WHERE av.fk_id_confirmacao = conf.id_confirmacao AND av.fk_id_avaliador = $1) as avaliacao_realizada
+            FROM Confirmacao conf
+            JOIN Anuncio a ON conf.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario candidato ON conf.fk_id_usuario = candidato.id_usuario
+            WHERE a.fk_id_usuario = $1; -- Onde EU sou o dono do anúncio
         `;
         const anuncios = await db.query(query, [req.user.id]);
         res.json(anuncios.rows);
-    } catch (err) {
+    } catch (err) { 
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
@@ -39,22 +37,20 @@ router.get('/trabalhos-confirmados', auth, async (req, res) => {
     try {
         const query = `
             SELECT 
-                a.id_anuncio, a.titulo, conf.data_confirmacao,
-                emp.id_usuario as id_empresa, emp.nome as nome_empresa,
-                (SELECT COUNT(*) > 0 FROM Avaliacao av 
-                    WHERE av.fk_id_avaliador = conf.fk_id_usuario AND av.fk_id_avaliado = emp.id_usuario
-                    AND av.fk_id_confirmacao = conf.id_confirmacao
-                ) as avaliacao_realizada
+                a.id_anuncio, a.titulo,
+                conf.id_confirmacao, conf.data_confirmacao,
+                publicador.id_usuario as id_outro_usuario,
+                publicador.nome as nome_outro_usuario,
+                'contratante' as papel_outro_usuario,
+                (SELECT COUNT(*) > 0 FROM Avaliacao av WHERE av.fk_id_confirmacao = conf.id_confirmacao AND av.fk_id_avaliador = $1) as avaliacao_realizada
             FROM Confirmacao conf
-            JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
-            JOIN Anuncio a ON c.fk_id_anuncio = a.id_anuncio
-            JOIN Usuario emp ON a.fk_id_usuario = emp.id_usuario
-            WHERE conf.fk_id_usuario = $1 -- Onde o usuário logado é o confirmado
-            ORDER BY conf.data_confirmacao DESC;
+            JOIN Anuncio a ON conf.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario publicador ON a.fk_id_usuario = publicador.id_usuario
+            WHERE conf.fk_id_usuario = $1; -- Onde EU sou o candidato confirmado
         `;
         const trabalhos = await db.query(query, [req.user.id]);
         res.json(trabalhos.rows);
-    } catch (err) {
+    } catch (err) { 
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
@@ -175,8 +171,8 @@ router.post('/:id/confirmar', auth, async (req, res) => {
         // 3. Criar o registro na tabela Confirmacao
         // A tabela 'Confirmacao' precisa do fk_id_usuario, que nesse contexto é o candidato confirmado.
         await client.query(
-            'INSERT INTO Confirmacao (fk_id_usuario) VALUES ($1)',
-            [idCandidatoConfirmado]
+            'INSERT INTO Confirmacao (fk_id_usuario, fk_id_anuncio) VALUES ($1, $2)',
+            [idCandidatoConfirmado, idAnuncio] // <<< Adiciona o idAnuncio
         );
         
         // 4. (Opcional) Mudar o status do anúncio para inativo/fechado, já que a vaga foi preenchida
