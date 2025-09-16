@@ -371,12 +371,9 @@ router.get('/', async (req, res) => {
             serv.nome as nome_servico,
             c.nome as nome_cidade,
             e.uf as uf_estado,
-            (SELECT img.caminho_imagem 
-             FROM Anuncio_Imagem img 
-             WHERE img.fk_id_anuncio = a.id_anuncio 
-             ORDER BY img.id_imagem ASC
-             LIMIT 1
-            ) as imagem_capa -- <<< VÍRGULA REMOVIDA DESTA LINHA
+            (SELECT img.caminho_imagem FROM Anuncio_Imagem img WHERE img.fk_id_anuncio = a.id_anuncio ORDER BY img.id_imagem ASC LIMIT 1) as imagem_capa,
+            -- Traz a média de avaliação calculada
+            COALESCE(user_ratings.media_geral, 0) as avaliacao_media
             ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
         FROM Anuncio a
         JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
@@ -384,6 +381,21 @@ router.get('/', async (req, res) => {
         JOIN Servico serv ON a.fk_id_servico = serv.id_servico
         LEFT JOIN Cidade c ON a.fk_id_cidade = c.id_cidade
         LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
+        -- Subquery para calcular a média de avaliação de cada usuário
+        LEFT JOIN (
+            SELECT 
+                fk_id_avaliado, 
+                AVG(
+                    CASE 
+                        WHEN tipo_avaliacao = 'P' THEN (ap.satisfacao + ap.pontualidade) / 2.0
+                        WHEN tipo_avaliacao = 'C' THEN (ac.clareza_demanda + ac.pagamento) / 2.0
+                    END
+                ) as media_geral
+            FROM Avaliacao av
+            LEFT JOIN Avaliacao_prestador ap ON av.id_avaliacao = ap.fk_id_avaliacao
+            LEFT JOIN Avaliacao_contratante ac ON av.id_avaliacao = ac.fk_id_avaliacao
+            GROUP BY fk_id_avaliado
+        ) as user_ratings ON u.id_usuario = user_ratings.fk_id_avaliado
     `;
     const conditions = ['a.status = true'];
     const values = [];
@@ -393,9 +405,28 @@ router.get('/', async (req, res) => {
     if (area) { conditions.push(`a.fk_Area_id_area = $${paramIndex}`); values.push(area); paramIndex++; }
     if (servico) { conditions.push(`a.fk_id_servico = $${paramIndex}`); values.push(servico); paramIndex++; }
     if (lat && lng && raio) { conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`); values.push(lng, lat, raio * 1000); paramIndex += 3; }
-    if (conditions.length > 0) { query += ' WHERE ' + conditions.join(' AND '); }
-    if (sortBy === 'distance' && lat && lng) { query += ' ORDER BY distancia ASC'; } else { query += ' ORDER BY a.data_publicacao DESC'; }
-    try { const anuncios = await db.query(query, values); res.json(anuncios.rows); } catch (err) { console.error("Erro na busca de anúncios:", err.message); res.status(500).send('Erro no servidor'); }
+    if (conditions.length > 0) {
+        query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    // --- Lógica de Ordenação Atualizada ---
+    if (sortBy === 'distance' && lat && lng) {
+        query += ' ORDER BY distancia ASC'; 
+    } else if (sortBy === 'rating') {
+        // Ordena pela média de avaliação (maior primeiro) e depois por data
+        query += ' ORDER BY avaliacao_media DESC, a.data_publicacao DESC';
+    } else {
+        // Ordenação padrão por data
+        query += ' ORDER BY a.data_publicacao DESC';
+    }
+
+    try {
+        const anuncios = await db.query(query, values);
+        res.json(anuncios.rows);
+    } catch (err) {
+        console.error("Erro na busca de anúncios:", err.message);
+        res.status(500).send('Erro no servidor');
+    }
 });
 
 // @route   POST api/anuncios
