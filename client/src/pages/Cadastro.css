@@ -1,0 +1,132 @@
+.cadastro-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Alinha no topo */
+    padding: 2rem 0;
+    min-height: calc(100vh - 70px - 4rem);
+}
+
+.cadastro-box {
+    background-color: #fff;
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+.cadastro-box h2 {
+    margin-top: 0;
+    margin-bottom: 2rem;
+}
+
+/* Estilo para a primeira etapa de escolha */
+.tipo-conta-escolha {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tipo-conta-btn {
+    padding: 1.5rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    background-color: #f9f9f9;
+    transition: all 0.2s;
+}
+
+.tipo-conta-btn:hover {
+    border-color: #fa5700;
+    background-color: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.tipo-conta-btn h3 {
+    margin: 0 0 0.5rem 0;
+}
+
+.tipo-conta-btn p {
+    margin: 0;
+    color: #666;
+}
+
+.cadastro-form {
+    display: flex;
+    flex-direction: column;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #fa5700;
+    box-shadow: 0 0 0 3px rgba(250, 87, 0, 0.15);
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+.btn-primary {
+    background-color: #fa5700;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #e04e00;
+}
+
+.back-button {
+    background: none;
+    border: none;
+    color: #007bff;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    align-self: flex-start;
+}
+
+.error-message {
+    background-color: #f8d7da; /* Fundo avermelhado claro */
+    color: #721c24; /* Texto vermelho escuro */
+    border: 1px solid #f5c6cb; /* Borda vermelha clara */
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem; /* Espaçamento antes dos campos de input */
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.field-error {
+    color: #721c24; /* Vermelho escuro */
+    font-size: 0.8rem;
+    margin-top: 4px;
+}

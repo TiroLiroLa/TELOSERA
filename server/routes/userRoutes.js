@@ -29,13 +29,12 @@ router.get('/me', auth, async (req, res) => {
 // Rota GET /api/users/:id (Perfil Público) - VERSÃO CORRIGIDA COM ST_AsText
 router.get('/:id', async (req, res) => {
     try {
-        const query = `
+        // Query para os dados principais do perfil
+        const perfilQuery = `
             SELECT 
-                u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro,
-                c.nome as cidade,
-                e.uf as estado,
-                ST_AsText(r.local) as localizacao,
-                r.raio
+                u.id_usuario, u.nome, u.tipo_usuario, u.data_cadastro, u.telefone,
+                c.nome as cidade, e.uf as estado,
+                ST_AsText(r.local) as localizacao, r.raio
             FROM Usuario u
             LEFT JOIN Atua a ON u.id_usuario = a.fk_id_usuario
             LEFT JOIN Regiao_atuacao r ON a.fk_id_regiao = r.id_regiao
@@ -43,13 +42,32 @@ router.get('/:id', async (req, res) => {
             LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
             WHERE u.id_usuario = $1;
         `;
-        const result = await db.query(query, [req.params.id]);
+        const perfilResult = await db.query(perfilQuery, [req.params.id]);
         
-        if (result.rows.length === 0) {
+        if (perfilResult.rows.length === 0) {
             return res.status(404).json({ msg: "Usuário não encontrado." });
         }
+
+        // Query separada para buscar as especialidades (áreas de atuação)
+        const areasQuery = `
+            SELECT area.id_area, area.nome FROM Usuario_area ua
+            JOIN Area_atuacao area ON ua.fk_id_area = area.id_area
+            WHERE ua.fk_id_usuario = $1;
+        `;
+        const areasResult = await db.query(areasQuery, [req.params.id]);
         
-        res.json(result.rows[0]);
+        // Query separada para buscar os anúncios publicados pelo usuário
+        const anunciosQuery = `SELECT id_anuncio, titulo, descricao, tipo FROM Anuncio WHERE fk_id_usuario = $1 ORDER BY data_publicacao DESC LIMIT 5`;
+        const anunciosResult = await db.query(anunciosQuery, [req.params.id]);
+
+        // Combina todos os resultados em um único objeto JSON
+        const perfilCompleto = {
+            ...perfilResult.rows[0],
+            especialidades: areasResult.rows,
+            anuncios: anunciosResult.rows
+        };
+        
+        res.json(perfilCompleto);
 
     } catch (err) {
         console.error(err.message);
@@ -237,15 +255,15 @@ router.get('/:id', async (req, res) => {
 // Rota POST /register (Versão Aprimorada e Corrigida)
 router.post('/register', async (req, res) => {
     const { 
-        nome, email, senha, tipo_usuario, cpf, telefone,
-        rua, numero, complemento, cidade, estado, cep,
-        fk_id_cidade, // <<< NOVO CAMPO
-        // <<< 1. Recebendo os novos dados do frontend
+        nome, email, senha, tipo_usuario, identificador, telefone,
+        rua, numero, complemento, cep,
+        fk_id_cidade_endereco, // <<< Novo nome para endereço,
         localizacao, // Deverá ser um objeto { lat, lng }
-        raio_atuacao // Deverá ser um número
+        fk_id_cidade_regiao, // <<< Novo nome para região
+        raio_atuacao// Deverá ser um número
     } = req.body;
 
-    if (!nome || !email || !senha || !tipo_usuario || !cpf) {
+    if (!nome || !email || !senha || !tipo_usuario || !identificador) {
         return res.status(400).json({ msg: 'Por favor, preencha todos os campos obrigatórios.' });
     }
     
@@ -256,40 +274,39 @@ router.post('/register', async (req, res) => {
         await client.query('BEGIN');
 
         // O resto do código permanece o mesmo, pois ele usa 'client.query'
-        const userExists = await client.query('SELECT * FROM Usuario WHERE email = $1 OR cpf = $2', [email, cpf]);
+        const userExists = await client.query('SELECT * FROM Usuario WHERE email = $1 OR identificador = $2', [email, identificador]);
         if (userExists.rows.length > 0) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ msg: 'Usuário com este e-mail ou CPF já existe.' });
+            return res.status(400).json({ msg: 'Usuário com este e-mail ou identificador já existe.' });
         }
 
         let idEndereco = null;
-        if (rua && cep && fk_id_cidade) {
+        if (rua && cep && fk_id_cidade_endereco) {
             const enderecoResult = await client.query(
                 'INSERT INTO Endereco (rua, numero, complemento, cep, fk_id_cidade) VALUES ($1, $2, $3, $4, $5) RETURNING id_ender',
-                [rua, numero, complemento, cep, fk_id_cidade]
+                [rua, numero, complemento, cep, fk_id_cidade_endereco]
             );
             idEndereco = enderecoResult.rows[0].id_ender;
         }
 
         const newUserResult = await client.query(
-            `INSERT INTO Usuario (nome, email, senha, tipo_usuario, cpf, telefone, ativo, fk_id_ender) 
+            `INSERT INTO Usuario (nome, email, senha, tipo_usuario, identificador, telefone, ativo, fk_id_ender) 
              VALUES ($1, $2, $3, $4, $5, $6, true, $7) 
              RETURNING id_usuario, nome, email`,
-            [nome, email, senha, tipo_usuario, cpf, telefone, idEndereco]
+            [nome, email, senha, tipo_usuario, identificador, telefone, idEndereco]
         );
         const newUser = newUserResult.rows[0];
 
         // --- LÓGICA PARA REGIÃO DE ATUAÇÃO ---
-        // <<< 2. Adicionando a nova lógica
-        if (localizacao && raio_atuacao && fk_id_cidade) { // Adiciona fk_id_cidade à condição
+        // 3. Lógica de Região usa fk_id_cidade_regiao
+        if (localizacao && raio_atuacao && fk_id_cidade_regiao) {
             const point = `POINT(${localizacao.lng} ${localizacao.lat})`;
             const regiaoResult = await client.query(
                 'INSERT INTO Regiao_atuacao (local, raio, fk_id_cidade) VALUES (ST_GeomFromText($1, 4326), $2, $3) RETURNING id_regiao',
-                [point, raio_atuacao, fk_id_cidade] // Adiciona fk_id_cidade
+                [point, raio_atuacao, fk_id_cidade_regiao]
             );
             const idRegiao = regiaoResult.rows[0].id_regiao;
 
-            // Associa o usuário a essa região na tabela de junção 'Atua'
             await client.query(
                 'INSERT INTO Atua (fk_id_usuario, fk_id_regiao) VALUES ($1, $2)',
                 [newUser.id_usuario, idRegiao]

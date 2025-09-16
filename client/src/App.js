@@ -6,79 +6,16 @@ import Login from './pages/Login';
 import './App.css';
 import { useEffect, useState } from 'react'; // Importe useState e useEffect
 import axios from 'axios'; // Importe axios
-import './components/Dashboard.css'; // <<< IMPORTA O NOVO CSS
 import './components/Styles.css'; // <<< IMPORTA O NOVO CSS
 import Home from './pages/Home'; // <<< IMPORTA A NOVA P�GINA HOME
+import Dashboard from './pages/Dashboard'; // <<< 1. IMPORTA o novo componente Dashboard
 import AnuncioDetalhe from './pages/AnuncioDetalhe'; // <<< Importa o novo componente
 import Perfil from './pages/Perfil';
 import EditarPerfil from './pages/EditarPerfil';
 import CriarAnuncio from './pages/CriarAnuncio'; // <<< Importar a nova página
+import GerenciarAnuncio from './pages/GerenciarAnuncio';
 import Header from './components/Header';
-
-// Componente para o Painel de Controle (Dashboard)
-const Dashboard = () => {
-    const { user, logout } = useContext(AuthContext);
-    const [meusAnuncios, setMeusAnuncios] = useState([]);
-
-    // Fun��o para buscar os an�ncios do usu�rio
-    const fetchMeusAnuncios = async () => {
-        try {
-            const res = await axios.get('/api/anuncios/meus');
-            setMeusAnuncios(res.data);
-        } catch (err) {
-            console.error("Erro ao buscar anúncios", err);
-        }
-    };
-
-    // useEffect para chamar a fun��o de busca quando o componente montar
-    useEffect(() => {
-        fetchMeusAnuncios();
-    }, []);
-
-    // Fun��o para deletar um an�ncio
-    const handleDelete = async (idAnuncio) => {
-        if (window.confirm('Tem certeza que deseja deletar este anúncio?')) {
-            try {
-                await axios.delete(`/api/anuncios/${idAnuncio}`);
-                // Filtra a lista, removendo o an�ncio que foi deletado
-                setMeusAnuncios(meusAnuncios.filter(anuncio => anuncio.id_anuncio !== idAnuncio));
-                alert('Anúncio deletado com sucesso.');
-            } catch (err) {
-                console.error(err.response.data);
-                alert('Erro ao deletar o anúncio.');
-            }
-        }
-    };
-
-    return (
-        <div className="dashboard-container">
-            <div className="dashboard-header">
-                <h1>Meu Painel</h1>
-                <Link to="/perfil/editar"><button>Editar Perfil</button></Link>
-                <button onClick={logout}>Sair</button>
-            </div>
-
-            <div className="anuncios-section">
-                <h2>Meus Anúncios Publicados</h2>
-                {meusAnuncios.length > 0 ? (
-                    <ul className="anuncios-lista">
-                        {meusAnuncios.map(anuncio => (
-                            <Link to={`/anuncio/${anuncio.id_anuncio}`} className='link-sem-sublinhado'>
-                                <li key={anuncio.id_anuncio} className="anuncio-item">
-                                    <h3>{anuncio.titulo}</h3>
-                                    <p>{anuncio.descricao}</p>
-                                    <button onClick={() => handleDelete(anuncio.id_anuncio)}>Deletar</button>
-                                </li>
-                            </Link>
-                        ))}
-                    </ul>
-                ) : (
-                    <p>Você ainda não publicou nenhum anúncio.</p>
-                )}
-            </div>
-        </div>
-    );
-};
+import Busca from './pages/Busca';
 
 const AppContent = () => {
     const { isAuthenticated, loading } = useContext(AuthContext);
@@ -101,8 +38,10 @@ const AppContent = () => {
                         <Route path="/" element={<Home />} />
                         <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
                         <Route path="/anuncios/criar" element={isAuthenticated ? <CriarAnuncio /> : <Navigate to="/login" />} />
+                        <Route path="/anuncios/gerenciar/:id" element={isAuthenticated ? <GerenciarAnuncio /> : <Navigate to="/login" />} />
                         <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
                         <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
+                        <Route path="/busca" element={<Busca />} />
                         <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
                         <Route path="/perfil/:id" element={<Perfil />} />
                         <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />

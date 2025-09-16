@@ -10,7 +10,7 @@ CREATE TABLE Usuario (
     ultimo_login timestamptz,
     ativo bool DEFAULT true,
     telefone varchar(15),
-    cpf varchar(11) NOT NULL,
+    identificador varchar(14) NOT NULL,
     nome varchar(255) NOT NULL,
     fk_id_ender int
 );
@@ -79,18 +79,11 @@ CREATE TABLE Confirmacao (
     fk_id_usuario int NOT NULL
 );
 
-CREATE TABLE Candidato_Candidata (
+CREATE TABLE Candidatura (
     data_candidatura timestamptz DEFAULT NOW(),
     fk_id_usuario int NOT NULL,
     fk_id_anuncio int NOT NULL,
     PRIMARY KEY (fk_id_usuario, fk_id_anuncio)
-);
-
-CREATE TABLE Reclamacao (
-    id_reclamacao serial PRIMARY KEY,
-    descricao text NOT NULL,
-    data_reclamacao timestamptz DEFAULT NOW(),
-    fk_id_usuario int NOT NULL
 );
 
 CREATE TABLE Endereco (
@@ -150,7 +143,7 @@ CREATE TABLE Cidade (
 
 ALTER TABLE Usuario
     ADD CONSTRAINT uq_usuario_email UNIQUE (email),
-    ADD CONSTRAINT uq_usuario_cpf UNIQUE (cpf),
+    ADD CONSTRAINT uq_usuari_identificador UNIQUE (identificador),
     ADD CONSTRAINT ck_tipo_usuario CHECK (tipo_usuario IN ('P', 'E')),
     ADD CONSTRAINT ck_formato_email CHECK (email ~* '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}$');
 
@@ -290,19 +283,14 @@ ALTER TABLE Confirmacao ADD CONSTRAINT FK_Confirmacao_2
     REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
-ALTER TABLE Candidato_Candidata ADD CONSTRAINT FK_Candidato_Candidata_1
+ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_1
     FOREIGN KEY (fk_id_usuario)
     REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
-ALTER TABLE Candidato_Candidata ADD CONSTRAINT FK_Candidato_Candidata_2
+ALTER TABLE Candidatura ADD CONSTRAINT FK_Candidatura_2
     FOREIGN KEY (fk_id_anuncio)
     REFERENCES Anuncio (id_anuncio)
-    ON DELETE CASCADE;
- 
-ALTER TABLE Reclamacao ADD CONSTRAINT FK_Reclamacao_2
-    FOREIGN KEY (fk_id_usuario)
-    REFERENCES Usuario (id_usuario)
     ON DELETE CASCADE;
  
 ALTER TABLE Atua ADD CONSTRAINT FK_Atua_1

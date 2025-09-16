@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react'; // <<< Adicionar useState
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Header.css';
@@ -8,20 +8,33 @@ import searchIcon from '../assets/icon.png'; // <<< 1. Importe a imagem
 const Header = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState(''); // <<< Estado para o input de busca
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        if (searchTerm.trim()) {
+            // Navega para a página de busca, passando o termo como parâmetro de query
+            navigate(`/busca?q=${searchTerm}`);
+        }
+    };
 
     return (
         <header className="main-header">
             <div className="header-left">
-                <Link to="/" className="logo">
-                    TELOSERA
-                </Link>
-                <div className="search-bar-placeholder">
-                    <input type="text" placeholder="Buscar..." />
-                    {/* <<< 2. Substitua o emoji pelo <img> tag */}
-                    <button>
+                <Link to="/" className="logo">TELOSERA</Link>
+                
+                {/* <<< O formulário de busca agora é funcional */}
+                <form onSubmit={handleSearch} className="search-bar-placeholder">
+                    <input 
+                        type="text" 
+                        placeholder="Buscar..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <button type="submit">
                         <img src={searchIcon} alt="Buscar" />
                     </button>
-                </div>
+                </form>
             </div>
 
             {/* 2. Grupo da direita (navegação) */}
@@ -34,11 +47,11 @@ const Header = () => {
                     {isAuthenticated ? (
                         <>
                             <Link to="/dashboard" className="nav-link">Meus Anúncios</Link>
-                            <div className="avatar-menu" onClick={() => navigate('/perfil/editar')}>
+                            <Link to={`/perfil/${user?.id_usuario}`} className="avatar-menu">
                                 <div className="avatar-placeholder">
                                     {user ? user.nome.charAt(0).toUpperCase() : '?'}
                                 </div>
-                            </div>
+                            </Link>
                         </>
                     ) : (
                         <>
