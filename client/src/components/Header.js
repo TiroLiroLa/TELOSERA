@@ -12,18 +12,16 @@ const Header = () => {
 
     const handleSearch = (e) => {
         e.preventDefault();
-        if (searchTerm.trim()) {
-            // Navega para a página de busca, passando o termo como parâmetro de query
-            navigate(`/busca?q=${searchTerm}`);
-        }
+        navigate(`/busca?q=${searchTerm}`);
     };
 
-    return (
+   return (
         <header className="main-header">
             <div className="header-left">
-                <Link to="/" className="logo">TELOSERA</Link>
+                <Link to="/" className="logo">
+                    TELOSERA
+                </Link>
                 
-                {/* <<< O formulário de busca agora é funcional */}
                 <form onSubmit={handleSearch} className="search-bar-placeholder">
                     <input 
                         type="text" 

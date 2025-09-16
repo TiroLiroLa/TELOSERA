@@ -125,3 +125,26 @@
     font-size: 0.9rem;
     word-break: break-all; /* Garante que emails longos não quebrem o layout */
 }
+
+.card-location-tag {
+    display: inline-flex; /* Permite alinhar o ícone e o texto */
+    align-items: center;
+    gap: 0.3rem; /* Espaçamento entre o ícone e o texto */
+    
+    background-color: #fdf8f0; /* Um verde bem claro, quase branco */
+    color: #c2780a; /* Verde escuro para o texto */
+    border: 1px solid #f3a94f; /* Borda verde clara */
+    
+    padding: 0.25rem 0.6rem;
+    border-radius: 15px; /* Deixa a tag arredondada */
+    
+    font-size: 0.8rem;
+    font-weight: 500;
+    
+    margin-top: 0.75rem; /* Espaçamento do conteúdo acima */
+}
+
+.card-location-tag img {
+    height: 12px; /* Controla o tamanho do ícone */
+    width: 12px;
+}

@@ -12,21 +12,19 @@ router.get('/meus-confirmados', auth, async (req, res) => {
         const query = `
             SELECT 
                 a.id_anuncio, a.titulo,
-                conf.data_confirmacao,
-                cand.nome as nome_candidato
-            FROM Anuncio a
-            -- Para encontrar o candidato confirmado, precisamos de múltiplos JOINs
-            JOIN Candidatura c ON a.id_anuncio = c.fk_id_anuncio
-            JOIN Confirmacao conf ON c.fk_id_usuario = conf.fk_id_usuario
-            JOIN Usuario cand ON conf.fk_id_usuario = cand.id_usuario
-            WHERE a.fk_id_usuario = $1 AND a.status = false -- Anúncios do usuário logado E que estão encerrados
-            -- A condição acima assume que a confirmação sempre encerra o anúncio.
-            -- Uma verificação mais robusta seria checar se existe uma confirmação associada.
-            ORDER BY conf.data_confirmacao DESC;
+                conf.id_confirmacao, conf.data_confirmacao,
+                candidato.id_usuario as id_outro_usuario, 
+                candidato.nome as nome_outro_usuario,
+                'candidato' as papel_outro_usuario,
+                (SELECT COUNT(*) > 0 FROM Avaliacao av WHERE av.fk_id_confirmacao = conf.id_confirmacao AND av.fk_id_avaliador = $1) as avaliacao_realizada
+            FROM Confirmacao conf
+            JOIN Anuncio a ON conf.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario candidato ON conf.fk_id_usuario = candidato.id_usuario
+            WHERE a.fk_id_usuario = $1; -- Onde EU sou o dono do anúncio
         `;
         const anuncios = await db.query(query, [req.user.id]);
         res.json(anuncios.rows);
-    } catch (err) {
+    } catch (err) { 
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
@@ -40,18 +38,19 @@ router.get('/trabalhos-confirmados', auth, async (req, res) => {
         const query = `
             SELECT 
                 a.id_anuncio, a.titulo,
-                conf.data_confirmacao,
-                emp.nome as nome_empresa
+                conf.id_confirmacao, conf.data_confirmacao,
+                publicador.id_usuario as id_outro_usuario,
+                publicador.nome as nome_outro_usuario,
+                'contratante' as papel_outro_usuario,
+                (SELECT COUNT(*) > 0 FROM Avaliacao av WHERE av.fk_id_confirmacao = conf.id_confirmacao AND av.fk_id_avaliador = $1) as avaliacao_realizada
             FROM Confirmacao conf
-            JOIN Candidatura c ON conf.fk_id_usuario = c.fk_id_usuario
-            JOIN Anuncio a ON c.fk_id_anuncio = a.id_anuncio
-            JOIN Usuario emp ON a.fk_id_usuario = emp.id_usuario
-            WHERE conf.fk_id_usuario = $1 -- Onde o usuário logado é o confirmado
-            ORDER BY conf.data_confirmacao DESC;
+            JOIN Anuncio a ON conf.fk_id_anuncio = a.id_anuncio
+            JOIN Usuario publicador ON a.fk_id_usuario = publicador.id_usuario
+            WHERE conf.fk_id_usuario = $1; -- Onde EU sou o candidato confirmado
         `;
         const trabalhos = await db.query(query, [req.user.id]);
         res.json(trabalhos.rows);
-    } catch (err) {
+    } catch (err) { 
         console.error(err.message);
         res.status(500).send("Erro no servidor");
     }
@@ -172,8 +171,8 @@ router.post('/:id/confirmar', auth, async (req, res) => {
         // 3. Criar o registro na tabela Confirmacao
         // A tabela 'Confirmacao' precisa do fk_id_usuario, que nesse contexto é o candidato confirmado.
         await client.query(
-            'INSERT INTO Confirmacao (fk_id_usuario) VALUES ($1)',
-            [idCandidatoConfirmado]
+            'INSERT INTO Confirmacao (fk_id_usuario, fk_id_anuncio) VALUES ($1, $2)',
+            [idCandidatoConfirmado, idAnuncio] // <<< Adiciona o idAnuncio
         );
         
         // 4. (Opcional) Mudar o status do anúncio para inativo/fechado, já que a vaga foi preenchida
@@ -278,6 +277,9 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         const idAnuncio = req.params.id;
         const idUsuarioLogado = req.user?.id; // Pode ser undefined se não houver login
 
+        // <<< 1. Pega lat/lng da query string, se enviados pelo frontend
+        const { lat, lng } = req.query;
+
         // 1. Busca os dados essenciais do anúncio primeiro
         const anuncioBaseQuery = `
             SELECT 
@@ -307,7 +309,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
             }
         }
         
-        // 3. Se a permissão foi concedida (anúncio ativo OU usuário autorizado), busca os detalhes completos
+        // 2. A query de detalhes agora calcula a distância condicionalmente
         const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
@@ -315,6 +317,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
                 u.id_usuario, u.nome as nome_usuario, u.email as email_usuario, u.telefone as telefone_usuario,
                 area.nome as nome_area, serv.nome as nome_servico,
                 c.nome as nome_cidade, e.uf as uf_estado
+                ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
             FROM Anuncio a
             JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
             JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
@@ -325,6 +328,10 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         `;
         const detalhesResult = await db.query(detalhesQuery, [idAnuncio]);
 
+        if (detalhesResult.rows.length === 0) {
+            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
+        }
+        
         res.json(detalhesResult.rows[0]);
 
     } catch (err) {
@@ -338,7 +345,7 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
 // @access  P�blico
 router.get('/', async (req, res) => {
     // Extrai todos os possíveis parâmetros da query string
-    const { q, tipo, lat, lng, raio, area, servico } = req.query;
+    const { q, tipo, lat, lng, raio, area, servico, sortBy } = req.query;
 
     let query = `
         SELECT 
@@ -348,6 +355,8 @@ router.get('/', async (req, res) => {
             serv.nome as nome_servico,
             c.nome as nome_cidade,
             e.uf as uf_estado
+            -- <<< 1. Calcula a distância se os parâmetros de localização forem fornecidos
+            ${lat && lng ? `, ST_Distance(a.local, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
         FROM Anuncio a
         JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
         JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
@@ -391,7 +400,9 @@ router.get('/', async (req, res) => {
     // 5. Filtro por Proximidade Geográfica (lat, lng, raio)
     // ST_DWithin é uma função do PostGIS que verifica se geometrias estão dentro de uma distância.
     if (lat && lng && raio) {
-        conditions.push(`ST_DWithin(a.local, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
+        // A CORREÇÃO: Converte a coluna 'a.local' para 'geography' também,
+        // garantindo que o cálculo seja feito em metros de forma consistente.
+        conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
         values.push(lng, lat, raio * 1000); // Raio em metros
         paramIndex += 3;
     }
@@ -400,7 +411,14 @@ router.get('/', async (req, res) => {
         query += ' WHERE ' + conditions.join(' AND ');
     }
 
-    query += ' ORDER BY a.data_publicacao DESC';
+    // <<< 2. Lógica de Ordenação Dinâmica
+    if (sortBy === 'distance' && lat && lng) {
+        // Ordena pela coluna de distância calculada (em metros)
+        query += ' ORDER BY distancia ASC'; 
+    } else {
+        // Ordenação padrão por data
+        query += ' ORDER BY a.data_publicacao DESC';
+    }
 
     try {
         const anuncios = await db.query(query, values);
