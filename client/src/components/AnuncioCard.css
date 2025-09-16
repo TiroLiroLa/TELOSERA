@@ -69,3 +69,21 @@
     height: 12px; /* Controla o tamanho do ícone */
     width: 12px;
 }
+
+.card-image-container {
+    height: 150px;
+    width: 100%;
+    overflow: hidden; /* Garante que a imagem não vaze para fora do contêiner */
+}
+
+.card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* A mágica acontece aqui */
+    transition: transform 0.3s ease; /* Efeito de zoom suave no hover */
+}
+
+/* Opcional: Adiciona o efeito de zoom no hover */
+.card:hover .card-image {
+    transform: scale(1.05);
+}

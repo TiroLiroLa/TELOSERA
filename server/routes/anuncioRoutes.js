@@ -370,7 +370,13 @@ router.get('/', async (req, res) => {
             area.nome as nome_area,
             serv.nome as nome_servico,
             c.nome as nome_cidade,
-            e.uf as uf_estado
+            e.uf as uf_estado,
+            (SELECT img.caminho_imagem 
+             FROM Anuncio_Imagem img 
+             WHERE img.fk_id_anuncio = a.id_anuncio 
+             ORDER BY img.id_imagem ASC
+             LIMIT 1
+            ) as imagem_capa -- <<< VÍRGULA REMOVIDA DESTA LINHA
             ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
         FROM Anuncio a
         JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
