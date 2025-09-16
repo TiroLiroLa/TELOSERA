@@ -5,6 +5,12 @@ import './AnuncioCard.css';
 const AnuncioCard = ({ anuncio }) => {
   const isOferta = anuncio.tipo === 'O';
 
+  const formatDistance = (distanceMeters) => {
+      if (!distanceMeters) return '';
+      const distanceKm = distanceMeters / 1000;
+      return `~${distanceKm.toFixed(1)} km`;
+  };
+
   return (
     //  <<< 2. Envolver todo o card com o Link
     <Link to={`/anuncio/${anuncio.id_anuncio}`} className="card-link">
@@ -24,6 +30,9 @@ const AnuncioCard = ({ anuncio }) => {
               <p className="card-info"><strong>Prestador:</strong> {anuncio.nome_usuario}</p>
               <p className="card-info"><strong>Serviço Principal:</strong> {anuncio.nome_servico}</p>
             </>
+          )}
+          {anuncio.distancia && (
+              <p className="card-distance">{formatDistance(anuncio.distancia)}</p>
           )}
         </div>
       </div>

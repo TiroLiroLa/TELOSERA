@@ -7,6 +7,29 @@ const jwt = require('jsonwebtoken'); // Importe o jsonwebtoken
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
 const auth = require('../middleware/auth'); // Importe o middleware de autentica��o
 
+// @route   GET /api/users/me/regiao
+// @desc    Buscar a região de atuação principal do usuário logado
+// @access  Privado
+router.get('/me/regiao', auth, async (req, res) => {
+    try {
+        const query = `
+            SELECT ST_X(r.local) as lng, ST_Y(r.local) as lat, r.raio 
+            FROM Regiao_atuacao r
+            JOIN Atua a ON r.id_regiao = a.fk_id_regiao
+            WHERE a.fk_id_usuario = $1
+            LIMIT 1;
+        `;
+        const result = await db.query(query, [req.user.id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ msg: "Região não encontrada." });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    }
+});
+
 // Rota GET /me (protegida)
 router.get('/me', auth, async (req, res) => {
   try {
