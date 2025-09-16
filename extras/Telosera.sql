@@ -142,6 +142,13 @@ CREATE TABLE Cidade (
     CONSTRAINT fk_cidade_estado FOREIGN KEY (fk_id_estado) REFERENCES Estado (id_estado)
 );
 
+CREATE TABLE Anuncio_Imagem (
+    id_imagem serial PRIMARY KEY,
+    fk_id_anuncio INT NOT NULL,
+    caminho_imagem VARCHAR(255) NOT NULL,
+    CONSTRAINT FK_Imagem_Anuncio FOREIGN KEY (fk_id_anuncio) REFERENCES Anuncio (id_anuncio) ON DELETE CASCADE
+);
+
 ALTER TABLE Usuario
     ADD CONSTRAINT uq_usuario_email UNIQUE (email),
     ADD CONSTRAINT uq_usuari_identificador UNIQUE (identificador),

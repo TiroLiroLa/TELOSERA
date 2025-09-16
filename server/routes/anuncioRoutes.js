@@ -3,6 +3,7 @@ const router = express.Router();
 const auth = require('../middleware/auth'); // Nosso middleware de autentica��o
 const authOptional = require('../middleware/authOptional'); // Precisaremos de um novo middleware
 const db = require('../config/db'); // <<< IMPORTA A CONEX�O CENTRALIZADA
+const upload = require('../middleware/upload'); // <<< Importar o middleware
 
 // @route   GET /api/anuncios/meus-confirmados
 // @desc    Buscar anúncios que o usuário PUBLICOU e que foram CONFIRMADOS
@@ -272,15 +273,13 @@ router.post('/:id/candidatar', auth, async (req, res) => {
 // @route   GET api/anuncios/:id
 // @desc    Buscar os detalhes de um �nico an�ncio
 // @access  P�blico
-router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middleware 'authOptional'
+router.get('/:id', authOptional, async (req, res) => {
     try {
         const idAnuncio = req.params.id;
-        const idUsuarioLogado = req.user?.id; // Pode ser undefined se não houver login
-
-        // <<< 1. Pega lat/lng da query string, se enviados pelo frontend
+        const idUsuarioLogado = req.user?.id;
         const { lat, lng } = req.query;
 
-        // 2. A query de detalhes agora calcula a distância condicionalmente
+        // --- BUSCA DOS DETALHES COMPLETOS DO ANÚNCIO ---
         const detalhesQuery = `
             SELECT 
                 a.id_anuncio, a.titulo, a.descricao, a.tipo, a.data_publicacao, a.data_servico,
@@ -298,25 +297,18 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
             WHERE a.id_anuncio = $1;
         `;
         const detalhesResult = await db.query(detalhesQuery, [idAnuncio]);
-
-        if (detalhesResult.rows.length === 0) {
-            return res.status(404).json({ msg: 'Anúncio não encontrado.' });
-        }
+        if (detalhesResult.rows.length === 0) { return res.status(404).json({ msg: 'Anúncio não encontrado.' }); }
         
         const anuncio = detalhesResult.rows[0];
-        const idPublicador = anuncio.id_publicador; // Pegamos o ID do dono do anúncio
-        const isOwner = idUsuarioLogado === anuncio.fk_id_usuario;
-        const isConfirmedCandidate = idUsuarioLogado === anuncio.id_candidato_confirmado;
+        const idPublicador = anuncio.id_publicador;
 
-        // --- LÓGICA DE PERMISSÃO PARA ANÚNCIOS ENCERRADOS (REFINADA) ---
+        // --- LÓGICA DE PERMISSÃO ---
         if (anuncio.status === false) {
             const confirmacaoQuery = `SELECT fk_id_usuario FROM Confirmacao WHERE fk_id_anuncio = $1 LIMIT 1`;
             const confirmacaoResult = await db.query(confirmacaoQuery, [idAnuncio]);
             const idCandidatoConfirmado = confirmacaoResult.rows[0]?.fk_id_usuario;
-
             const isOwner = idUsuarioLogado === idPublicador;
             const isConfirmedCandidate = idUsuarioLogado === idCandidatoConfirmado;
-
             if (!idUsuarioLogado || (!isOwner && !isConfirmedCandidate)) {
                 return res.status(403).json({ msg: "Este anúncio está encerrado e não pode ser visualizado." });
             }
@@ -353,6 +345,9 @@ router.get('/:id', authOptional, async (req, res) => { // <<< Usa o novo middlew
         // Adiciona o objeto de avaliação ao resultado final do anúncio
         anuncio.avaliacao = avaliacaoData;
 
+        const imagensQuery = await db.query('SELECT id_imagem, caminho_imagem FROM Anuncio_Imagem WHERE fk_id_anuncio = $1', [idAnuncio]);
+        anuncio.imagens = imagensQuery.rows; // Adiciona o array de imagens ao objeto
+
         res.json(anuncio);
 
     } catch (err) {
@@ -376,8 +371,7 @@ router.get('/', async (req, res) => {
             serv.nome as nome_servico,
             c.nome as nome_cidade,
             e.uf as uf_estado
-            -- <<< 1. Calcula a distância se os parâmetros de localização forem fornecidos
-            ${lat && lng ? `, ST_Distance(a.local, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
+            ${lat && lng ? `, ST_Distance(a.local::geography, ST_MakePoint(${lng}, ${lat})::geography) as distancia` : ''}
         FROM Anuncio a
         JOIN Usuario u ON a.fk_id_usuario = u.id_usuario
         JOIN Area_atuacao area ON a.fk_Area_id_area = area.id_area
@@ -385,104 +379,87 @@ router.get('/', async (req, res) => {
         LEFT JOIN Cidade c ON a.fk_id_cidade = c.id_cidade
         LEFT JOIN Estado e ON c.fk_id_estado = e.id_estado
     `;
-
     const conditions = ['a.status = true'];
     const values = [];
     let paramIndex = 1;
-
-    // 1. Filtro por Palavra-chave (q)
-    if (q) {
-        conditions.push(`(a.titulo ILIKE $${paramIndex} OR a.descricao ILIKE $${paramIndex})`);
-        values.push(`%${q}%`);
-        paramIndex++;
-    }
-
-    // 2. Filtro por Tipo de Anúncio (O ou S)
-    if (tipo) {
-        conditions.push(`a.tipo = $${paramIndex}`);
-        values.push(tipo.toUpperCase());
-        paramIndex++;
-    }
-
-    // 3. Filtro por Especialização (area)
-    if (area) {
-        conditions.push(`a.fk_Area_id_area = $${paramIndex}`);
-        values.push(area);
-        paramIndex++;
-    }
-
-    // 4. Filtro por Serviço (servico)
-    if (servico) {
-        conditions.push(`a.fk_id_servico = $${paramIndex}`);
-        values.push(servico);
-        paramIndex++;
-    }
-    
-    // 5. Filtro por Proximidade Geográfica (lat, lng, raio)
-    // ST_DWithin é uma função do PostGIS que verifica se geometrias estão dentro de uma distância.
-    if (lat && lng && raio) {
-        // A CORREÇÃO: Converte a coluna 'a.local' para 'geography' também,
-        // garantindo que o cálculo seja feito em metros de forma consistente.
-        conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`);
-        values.push(lng, lat, raio * 1000); // Raio em metros
-        paramIndex += 3;
-    }
-
-    if (conditions.length > 0) {
-        query += ' WHERE ' + conditions.join(' AND ');
-    }
-
-    // <<< 2. Lógica de Ordenação Dinâmica
-    if (sortBy === 'distance' && lat && lng) {
-        // Ordena pela coluna de distância calculada (em metros)
-        query += ' ORDER BY distancia ASC'; 
-    } else {
-        // Ordenação padrão por data
-        query += ' ORDER BY a.data_publicacao DESC';
-    }
-
-    try {
-        const anuncios = await db.query(query, values);
-        res.json(anuncios.rows);
-    } catch (err) {
-        console.error("Erro na busca de anúncios:", err.message);
-        res.status(500).send('Erro no servidor');
-    }
+    if (q) { conditions.push(`(a.titulo ILIKE $${paramIndex} OR a.descricao ILIKE $${paramIndex})`); values.push(`%${q}%`); paramIndex++; }
+    if (tipo) { conditions.push(`a.tipo = $${paramIndex}`); values.push(tipo.toUpperCase()); paramIndex++; }
+    if (area) { conditions.push(`a.fk_Area_id_area = $${paramIndex}`); values.push(area); paramIndex++; }
+    if (servico) { conditions.push(`a.fk_id_servico = $${paramIndex}`); values.push(servico); paramIndex++; }
+    if (lat && lng && raio) { conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex+1})::geography, $${paramIndex+2})`); values.push(lng, lat, raio * 1000); paramIndex += 3; }
+    if (conditions.length > 0) { query += ' WHERE ' + conditions.join(' AND '); }
+    if (sortBy === 'distance' && lat && lng) { query += ' ORDER BY distancia ASC'; } else { query += ' ORDER BY a.data_publicacao DESC'; }
+    try { const anuncios = await db.query(query, values); res.json(anuncios.rows); } catch (err) { console.error("Erro na busca de anúncios:", err.message); res.status(500).send('Erro no servidor'); }
 });
 
 // @route   POST api/anuncios
 // @desc    Criar um novo anúncio (Versão Aprimorada com Localização)
 // @access  Privado
-router.post('/', auth, async (req, res) => {
-  const idUsuario = req.user.id;
-  const { 
-    titulo, descricao, tipo, 
-    fk_Area_id_area, fk_id_servico, localizacao, 
-    fk_id_cidade, 
-    data_servico // <<< NOVO CAMPO
-  } = req.body;
+router.post('/', auth, upload.array('images', 5), async (req, res) => {
+    // <<< 1. FAZ O PARSE DA STRING JSON
+    const dadosFormulario = JSON.parse(req.body.jsonData);
 
-  // Adiciona data_servico à validação
-  if (!titulo || !descricao || !tipo || !fk_Area_id_area || !fk_id_servico || !data_servico) {
-    return res.status(400).json({ msg: 'Por favor, preencha todos os campos obrigatórios.' });
-  }
+    const idUsuario = req.user.id;
+    // <<< 2. Extrai os dados do objeto parseado
+    const { 
+        titulo, descricao, tipo, 
+        fk_Area_id_area, fk_id_servico, localizacao, 
+        fk_id_cidade, data_servico 
+    } = dadosFormulario;
+    
+    // Os arquivos continuam vindo de req.files
+    const files = req.files;
 
-  try {
-    let point = null;
-    if (localizacao) { point = `POINT(${localizacao.lng} ${localizacao.lat})`; }
+    const client = await db.pool.connect();
+    try {
+        await client.query('BEGIN');
 
-    const novoAnuncio = await db.query(
-      `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
-       VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) 
-       RETURNING *`,
-      [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
-    );
+        let point = null;
+        if (localizacao && localizacao.lng && localizacao.lat) {
+            point = `POINT(${localizacao.lng} ${localizacao.lat})`;
+        }
 
-    res.status(201).json(novoAnuncio.rows[0]);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Erro no servidor');
-  }
+        // A query de inserção permanece a mesma, pois já estava correta
+        const novoAnuncioResult = await client.query(
+          `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
+           VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) 
+           RETURNING id_anuncio`,
+          [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
+        );
+        const idAnuncio = novoAnuncioResult.rows[0].id_anuncio;
+
+        // A lógica para salvar as imagens permanece a mesma
+        if (files && files.length > 0) {
+            const imageInsertPromises = files.map(file => {
+                const imagePath = `/uploads/${file.filename}`;
+                return client.query(
+                    'INSERT INTO Anuncio_Imagem (fk_id_anuncio, caminho_imagem) VALUES ($1, $2)',
+                    [idAnuncio, imagePath]
+                );
+            });
+            await Promise.all(imageInsertPromises);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json({ msg: 'Anúncio e imagens salvos com sucesso!' });
+
+    } catch (err) {
+        // Se ocorrer um erro, deleta os arquivos que foram salvos no disco
+        if (files) {
+            files.forEach(file => {
+                try {
+                    fs.unlinkSync(file.path);
+                } catch (unlinkErr) {
+                    console.error("Erro ao deletar arquivo após falha:", unlinkErr);
+                }
+            });
+        }
+        await client.query('ROLLBACK');
+        console.error(err.message);
+        res.status(500).send("Erro no servidor");
+    } finally {
+        client.release();
+    }
 });
 
 // @route   DELETE api/anuncios/:id

@@ -16,7 +16,8 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.1",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "yet-another-react-lightbox": "^3.25.0"
   },
   "scripts": {
     "start": "react-scripts start",

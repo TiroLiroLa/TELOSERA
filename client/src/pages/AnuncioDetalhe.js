@@ -7,6 +7,8 @@ import Modal from '../components/Modal'; // Para o mapa
 import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
 import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
 import StarRating from '../components/StarRating'; // <<< Importar
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
@@ -14,6 +16,8 @@ const AnuncioDetalhe = () => {
     const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext); // Pega o authLoading
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0); // Para saber qual imagem abrir
 
      // <<< 1. Novo estado para controlar o status da candidatura
     const [statusCandidatura, setStatusCandidatura] = useState({
@@ -160,12 +164,52 @@ const AnuncioDetalhe = () => {
     });
     const postadoEm = new Date(anuncio.data_publicacao).toLocaleDateString('pt-BR');
 
+    // Prepara a lista de imagens para o Lightbox. Ele precisa de um array de objetos com a propriedade 'src'.
+    const lightboxImages = anuncio.imagens?.map(img => ({
+        src: `http://localhost:3001${img.caminho_imagem}`
+    })) || [];
+    
+    // Pega as 3 primeiras imagens para exibição na grade
+    const displayImages = anuncio.imagens ? anuncio.imagens.slice(0, 3) : [];
+    const remainingImagesCount = anuncio.imagens ? Math.max(0, anuncio.imagens.length - 3) : 0;
+
+    const openLightbox = (index) => {
+        setLightboxIndex(index);
+        setLightboxOpen(true);
+    };
+
     return (
       <> 
         <div className="anuncio-detalhe-page">
             <main className="anuncio-main">
                 <div className="anuncio-header">
                     <h1>{anuncio.titulo}</h1>
+                    {/* <<< GALERIA DE IMAGENS REFORMULADA */}
+                    {displayImages.length > 0 && (
+                        <div className="image-gallery">
+                            {displayImages.map((img, index) => {
+                                const isThirdImageWithMore = index === 2 && remainingImagesCount > 0;
+                                const wrapperClass = `gallery-image-wrapper ${isThirdImageWithMore ? 'has-more-images' : ''}`;
+                                const moreCount = `+${remainingImagesCount}`;
+
+                                return (
+                                    <div 
+                                        key={img.id_imagem} 
+                                        className={wrapperClass}
+                                        {...(isThirdImageWithMore && { 'data-more-count': moreCount })}
+                                        // <<< 3. Adiciona o onClick para abrir o Lightbox
+                                        onClick={() => openLightbox(index)}
+                                    >
+                                        <img 
+                                            src={`http://localhost:3001${img.caminho_imagem}`} 
+                                            alt={`Imagem ${index + 1} do anúncio`}
+                                            className="gallery-image"
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                     <p className="anuncio-subheader">
                         Postado por <Link to={`/perfil/${anuncio.id_publicador}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
                         {anuncio.nome_cidade && (
@@ -260,6 +304,12 @@ const AnuncioDetalhe = () => {
                     <MoveableMap location={anuncio.localizacao} raio={0.01} />
                 </Modal>
             )}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                slides={lightboxImages}
+                index={lightboxIndex}
+            />
         </>
     );
 };

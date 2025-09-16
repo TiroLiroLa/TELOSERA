@@ -25,6 +25,8 @@ app.use('/api/dados', require('./routes/dadosRoutes')); // <<< NOVA LINHA
 
 app.use('/api/avaliacoes', require('./routes/avaliacaoRoutes'));
 
+app.use('/uploads', express.static('uploads'));
+
 // Define a porta do servidor
 const PORT = process.env.PORT || 3001;
 
