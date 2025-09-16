@@ -5,6 +5,7 @@ import StaticMap from '../components/StaticMap'; // <<< 1. Importar o novo compo
 import '../components/Styles.css'; // Importe seu arquivo CSS
 import './Perfil.css'; // Importa o novo CSS
 import { AuthContext } from '../context/AuthContext'; // Para saber se somos o dono do perfil
+import StarRating from '../components/StarRating'; // <<< Importar
 
 const Perfil = () => {
   const { id } = useParams(); // Pega o ID da URL
@@ -47,6 +48,12 @@ const Perfil = () => {
           {perfil.nome.charAt(0).toUpperCase()}
         </div>
         <h2>{perfil.nome}</h2>
+        {perfil.avaliacao && (
+            <div className="perfil-rating">
+                <StarRating rating={perfil.avaliacao.media_geral} />
+                <span> ({perfil.avaliacao.total_avaliacoes} avaliações)</span>
+            </div>
+        )}
         <p className="membro-desde">Membro desde {dataCadastro}</p>
         
         {/* Botão de Editar só aparece para o dono */}

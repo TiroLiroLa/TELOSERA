@@ -206,6 +206,7 @@ const Busca = () => {
                         {/* <<< 2. Garante que o valor do sortBy seja 'relevance' se não for 'distance' */}
                         <select name="sortBy" value={filtros.sortBy || 'relevance'} onChange={handleFiltroChange}>
                             <option value="relevance">Mais Recentes</option>
+                            <option value="rating">Melhores Avaliações</option>
                             {isGeoSearch && <option value="distance">Menor Distância</option>}
                         </select>
                     </div>

@@ -6,6 +6,9 @@ import './AnuncioDetalhe.css'; // Importa o novo CSS
 import Modal from '../components/Modal'; // Para o mapa
 import MoveableMap from '../components/MoveableMap'; // Nosso mapa estático
 import mapPinIcon from '../assets/map-pin.svg'; // <<< Importa o ícone
+import StarRating from '../components/StarRating'; // <<< Importar
+import Lightbox from "yet-another-react-lightbox";
+import "yet-another-react-lightbox/styles.css";
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams(); // Renomeia 'id' para 'idAnuncio' para clareza
@@ -13,6 +16,8 @@ const AnuncioDetalhe = () => {
     const { isAuthenticated, user, loading: authLoading } = useContext(AuthContext); // Pega o authLoading
     const [anuncio, setAnuncio] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [lightboxIndex, setLightboxIndex] = useState(0); // Para saber qual imagem abrir
 
      // <<< 1. Novo estado para controlar o status da candidatura
     const [statusCandidatura, setStatusCandidatura] = useState({
@@ -125,7 +130,7 @@ const AnuncioDetalhe = () => {
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
-    const isOwner = user?.id_usuario === anuncio?.id_usuario;
+    const isOwner = user?.id_usuario === anuncio?.id_publicador;
 
     // --- Lógica de renderização do botão de Ação ---
     const renderActionButton = () => {
@@ -159,14 +164,54 @@ const AnuncioDetalhe = () => {
     });
     const postadoEm = new Date(anuncio.data_publicacao).toLocaleDateString('pt-BR');
 
+    // Prepara a lista de imagens para o Lightbox. Ele precisa de um array de objetos com a propriedade 'src'.
+    const lightboxImages = anuncio.imagens?.map(img => ({
+        src: `http://localhost:3001${img.caminho_imagem}`
+    })) || [];
+    
+    // Pega as 3 primeiras imagens para exibição na grade
+    const displayImages = anuncio.imagens ? anuncio.imagens.slice(0, 3) : [];
+    const remainingImagesCount = anuncio.imagens ? Math.max(0, anuncio.imagens.length - 3) : 0;
+
+    const openLightbox = (index) => {
+        setLightboxIndex(index);
+        setLightboxOpen(true);
+    };
+
     return (
       <> 
         <div className="anuncio-detalhe-page">
             <main className="anuncio-main">
                 <div className="anuncio-header">
                     <h1>{anuncio.titulo}</h1>
+                    {/* <<< GALERIA DE IMAGENS REFORMULADA */}
+                    {displayImages.length > 0 && (
+                        <div className="image-gallery">
+                            {displayImages.map((img, index) => {
+                                const isThirdImageWithMore = index === 2 && remainingImagesCount > 0;
+                                const wrapperClass = `gallery-image-wrapper ${isThirdImageWithMore ? 'has-more-images' : ''}`;
+                                const moreCount = `+${remainingImagesCount}`;
+
+                                return (
+                                    <div 
+                                        key={img.id_imagem} 
+                                        className={wrapperClass}
+                                        {...(isThirdImageWithMore && { 'data-more-count': moreCount })}
+                                        // <<< 3. Adiciona o onClick para abrir o Lightbox
+                                        onClick={() => openLightbox(index)}
+                                    >
+                                        <img 
+                                            src={`http://localhost:3001${img.caminho_imagem}`} 
+                                            alt={`Imagem ${index + 1} do anúncio`}
+                                            className="gallery-image"
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                     <p className="anuncio-subheader">
-                        Postado por <Link to={`/perfil/${anuncio.id_usuario}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
+                        Postado por <Link to={`/perfil/${anuncio.id_publicador}`}>{anuncio.nome_usuario}</Link> em {postadoEm}
                         {anuncio.nome_cidade && (
                             <>
                                 {' - '}
@@ -223,6 +268,13 @@ const AnuncioDetalhe = () => {
                         <h3>{anuncio.tipo === 'O' ? 'Contratante' : 'Prestador'}</h3>
                         <p>{anuncio.nome_usuario}</p>
 
+                        {anuncio.avaliacao && (
+                                <div className="sidebar-rating">
+                                <StarRating rating={anuncio.avaliacao.media_geral} />
+                                <span> ({anuncio.avaliacao.total_avaliacoes})</span>
+                            </div>
+                        )}
+
                         {/* <<< 3. Seção de Contato Direto */}
                         <div className="contact-details">
                             <h4>Contato Direto</h4>
@@ -231,7 +283,7 @@ const AnuncioDetalhe = () => {
                         </div>
                         
                         {/* <<< 4. Botão principal agora é "Acessar Perfil" */}
-                        <Link to={`/perfil/${anuncio.id_usuario}`} className="btn btn-primary btn-contact">
+                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn btn-primary btn-contact">
                             Acessar Perfil Completo
                         </Link>
                         {/* <<< 4. Renderiza o botão de ação dinâmico */}
@@ -252,6 +304,12 @@ const AnuncioDetalhe = () => {
                     <MoveableMap location={anuncio.localizacao} raio={0.01} />
                 </Modal>
             )}
+            <Lightbox
+                open={lightboxOpen}
+                close={() => setLightboxOpen(false)}
+                slides={lightboxImages}
+                index={lightboxIndex}
+            />
         </>
     );
 };

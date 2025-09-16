@@ -133,3 +133,11 @@
 .btn-secondary:hover {
     background-color: #5a6268;
 }
+
+.perfil-rating {
+    margin: 0.75rem 0; /* Espaçamento acima e abaixo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem; /* Espaçamento entre as estrelas e o texto */
+}

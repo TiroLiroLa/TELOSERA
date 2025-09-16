@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './AnuncioCard.css';
 import mapPinIcon from '../assets/map-pin.svg'; // <<< 1. Importa o ícone
+import anuncioPlaceholder from '../assets/anuncio_placeholder.png'; // <<< 1. Importa a imagem padrão
+import StarRating from './StarRating'; // <<< Importar o componente de estrelas
 
 const AnuncioCard = ({ anuncio }) => {
     const isOferta = anuncio.tipo === 'O';
@@ -17,11 +19,15 @@ const AnuncioCard = ({ anuncio }) => {
 
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
+    const imageUrl = anuncio.imagem_capa 
+        ? `http://localhost:3001${anuncio.imagem_capa}` 
+        : anuncioPlaceholder;
+
     return (
         <Link to={`/anuncio/${anuncio.id_anuncio}`} className="card-link">
             <div className="card">
-                <div className="card-image-placeholder">
-                    <span>IMAGEM TEMPORÁRIA</span>
+                <div className="card-image-container">
+                    <img src={imageUrl} alt={anuncio.titulo} className="card-image" />
                 </div>
                 <div className="card-content">
                     <h3 className="card-title">{anuncio.titulo}</h3>
@@ -35,6 +41,12 @@ const AnuncioCard = ({ anuncio }) => {
                             <p className="card-info"><strong>Prestador:</strong> {anuncio.nome_usuario}</p>
                             <p className="card-info"><strong>Serviço Principal:</strong> {anuncio.nome_servico}</p>
                         </>
+                    )}
+                    {/* A API agora envia 'avaliacao_media' */}
+                    {anuncio.avaliacao_media > 0 && (
+                        <div style={{ marginTop: '0.5rem' }}>
+                            <StarRating rating={anuncio.avaliacao_media} />
+                        </div>
                     )}
 
                     {/* <<< 2. Aplica a nova estrutura com a classe e o ícone */}
