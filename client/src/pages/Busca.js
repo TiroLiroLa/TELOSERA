@@ -1,15 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react'; // <<< Adicionar useContext
 import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import AnuncioCard from '../components/AnuncioCard'; // Reutilizamos o card da Home
 import './Busca.css'; // Vamos criar este CSS
 import Modal from '../components/Modal'; // <<< 1. Importar Modal
 import LocationPicker from '../components/LocationPicker'; // <<< 2. Importar LocationPicker
+import { AuthContext } from '../context/AuthContext'; // <<< Adicionar AuthContext
 
 const Busca = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [resultados, setResultados] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { isAuthenticated, loading: authLoading } = useContext(AuthContext); // <<< Acessa o contexto
     
     // <<< 1. A função de inicialização agora lê TODOS os parâmetros da URL
     const inicializarFiltros = () => {
@@ -18,7 +20,7 @@ const Busca = () => {
             tipo: searchParams.get('tipo') || '',
             area: searchParams.get('area') || '',
             servico: searchParams.get('servico') || '',
-            sortBy: searchParams.get('sortBy') || 'relevance',
+            sortBy: searchParams.get('sortBy') || '', // Inicia vazio
             lat: searchParams.get('lat') || '',
             lng: searchParams.get('lng') || '',
             raio: searchParams.get('raio') || '',
@@ -86,6 +88,26 @@ const Busca = () => {
         fetchFiltroData();
     }, []);
 
+    // <<< 2. NOVA FUNÇÃO para lidar com a abertura do modal de mapa
+    const handleOpenMapModal = async () => {
+        // Se o usuário está logado e AINDA NÃO TEM um local temporário selecionado...
+        if (isAuthenticated && !tempLocation) {
+            try {
+                // Tenta buscar a região padrão do usuário
+                const resRegiao = await axios.get('/api/users/me/regiao');
+                const { lat, lng, raio } = resRegiao.data;
+                
+                // Pré-preenche os estados temporários do modal
+                setTempLocation({ lat, lng });
+                setTempRaio(raio);
+            } catch (error) {
+                console.log("Usuário sem região padrão, o mapa abrirá sem preenchimento.");
+                // Se falhar (usuário sem região), não faz nada, o modal abrirá vazio
+            }
+        }
+        setMapModalOpen(true); // Abre o modal
+    };
+
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;
         // Se mudamos para 'Mais Recentes', removemos o sortBy da URL para mantê-la limpa
@@ -121,12 +143,13 @@ const Busca = () => {
             delete newFilters.lat;
             delete newFilters.lng;
             delete newFilters.raio;
-            // Se a ordenação era por distância, volta para o padrão
-            if (newFilters.sortBy === 'distance') {
-                delete newFilters.sortBy;
-            }
+            // Volta para a ordenação padrão
+            newFilters.sortBy = 'relevance';
             return newFilters;
         });
+        // Limpa também os estados temporários do modal
+        setTempLocation(null);
+        setTempRaio('20');
     };
 
     return (
@@ -168,7 +191,8 @@ const Busca = () => {
                             <button onClick={handleClearGeoFilter} className="clear-btn">Limpar</button>
                         </div>
                     ) : (
-                        <button type="button" onClick={() => setMapModalOpen(true)}>
+                        // <<< 4. O botão agora chama a nova função handleOpenMapModal
+                        <button type="button" onClick={handleOpenMapModal}>
                             Buscar Perto de Mim
                         </button>
                     )}
@@ -179,9 +203,9 @@ const Busca = () => {
                     <h2>Resultados da Busca ({resultados.length})</h2>
                     <div className="form-group">
                         <label style={{ marginRight: '10px' }}>Ordenar por:</label>
-                        <select name="sortBy" value={filtros.sortBy} onChange={handleFiltroChange}>
+                        {/* <<< 2. Garante que o valor do sortBy seja 'relevance' se não for 'distance' */}
+                        <select name="sortBy" value={filtros.sortBy || 'relevance'} onChange={handleFiltroChange}>
                             <option value="relevance">Mais Recentes</option>
-                            {/* <<< A condição agora usa a variável 'isGeoSearch' que vem do estado */}
                             {isGeoSearch && <option value="distance">Menor Distância</option>}
                         </select>
                     </div>
@@ -191,6 +215,7 @@ const Busca = () => {
                 ) : (
                     <div className="cards-container">
                         {resultados.length > 0 ? (
+                            // <<< 3. USA O AnuncioCard, que já exibe a distância
                             resultados.map(anuncio => <AnuncioCard key={anuncio.id_anuncio} anuncio={anuncio} />)
                         ) : (
                             <p>Nenhum resultado encontrado para os filtros selecionados.</p>
@@ -201,9 +226,14 @@ const Busca = () => {
         </div>
         <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
                 <h2>Buscar por Proximidade</h2>
-                <p>Clique no mapa para definir um ponto central e ajuste o raio da busca.</p>
+                <p>Use sua localização padrão ou selecione um novo ponto no mapa.</p>
                 <div style={{height: '300px', marginBottom: '1rem'}}>
-                    <LocationPicker onLocationSelect={setTempLocation} initialPosition={tempLocation} radiusKm={tempRaio} />
+                    {/* O LocationPicker já está preparado para receber a posição inicial */}
+                    <LocationPicker 
+                        onLocationSelect={setTempLocation} 
+                        initialPosition={tempLocation} 
+                        radiusKm={tempRaio} 
+                    />
                 </div>
                 <div className="form-group">
                     <label>Raio da Busca (em km)</label>
@@ -220,6 +250,6 @@ const Busca = () => {
             </Modal>
         </>
     );
-};
+}
 
 export default Busca;
