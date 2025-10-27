@@ -33,6 +33,7 @@ const Cadastro = () => {
     const [enderecoCity, setEnderecoCity] = useState(null);
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
 
 
     useEffect(() => {
@@ -109,7 +110,8 @@ const Cadastro = () => {
         };
 
         try {
-            await axios.post('/api/users/register', dadosParaEnviar);
+            const res = await axios.post('/api/users/register', dadosParaEnviar);
+            setSuccessMessage(res.data.msg);
             setEtapa(3);
         } catch (err) {
             const errorMsg = err.response?.data?.msg || 'Ocorreu um erro. Tente novamente.';
@@ -215,9 +217,9 @@ const Cadastro = () => {
 
     const renderEtapa3 = () => (
         <div>
-            <h3>Cadastro Realizado com Sucesso!</h3>
-            <p>Seu perfil foi criado. Agora você já pode fazer login na plataforma.</p>
-            <Link to="/login" className="btn btn-primary">Ir para o Login</Link>
+            <h3>Quase lá!</h3>
+            <p>{successMessage}</p>
+            <p>Enviamos um link de ativação para o seu endereço de e-mail.</p>
         </div>
     );
 

@@ -12,6 +12,7 @@ CREATE TABLE Usuario (
     telefone varchar(15),
     identificador varchar(14) NOT NULL,
     nome varchar(255) NOT NULL,
+    verificado BOOLEAN DEFAULT FALSE,
     fk_id_ender int
 );
 
@@ -171,11 +172,13 @@ ALTER TABLE Avaliacao_prestador
     ADD CONSTRAINT ck_satisfacao CHECK (satisfacao BETWEEN 1 AND 5),
     ADD CONSTRAINT ck_pontualidade CHECK (pontualidade BETWEEN 1 AND 5);
 
-CREATE OR REPLACE FUNCTION hash_senha()
+CREATE FUNCTION hash_senha()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.senha IS NOT NULL AND NEW.senha <> '' THEN
-        NEW.senha := crypt(NEW.senha, gen_salt('bf'));
+    IF TG_OP = 'INSERT' OR (NEW.senha IS DISTINCT FROM OLD.senha) THEN
+        IF NEW.senha IS NOT NULL AND NEW.senha <> '' THEN
+            NEW.senha := crypt(NEW.senha, gen_salt('bf'));
+        END IF;
     END IF;
     RETURN NEW;
 END;

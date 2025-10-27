@@ -18,16 +18,15 @@ const Login = () => {
   };
 
   const onSubmit = async e => {
-    e.preventDefault();
-    setError('');
-    const success = await login(email, senha);
-    if (success) {
-
-      navigate('/dashboard');
-    } else {
-      setError('E-mail ou senha inválidos. Por favor, tente novamente.');
-    }
-  };
+        e.preventDefault();
+        setError('');
+        try {
+            await login(email, senha);
+            navigate('/dashboard'); 
+        } catch (err) {
+            setError(err.msg || 'Ocorreu um erro desconhecido.');
+        }
+    };
 
   return (
     <div className="login-page-container">

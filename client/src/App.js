@@ -16,6 +16,9 @@ import CriarAnuncio from './pages/CriarAnuncio';
 import GerenciarAnuncio from './pages/GerenciarAnuncio';
 import Header from './components/Header';
 import Busca from './pages/Busca';
+import VerificationSuccess from './pages/VerificationSuccess';
+import VerificationFailure from './pages/VerificationFailure';
+import Verification from './pages/Verification';
 
 const AppContent = () => {
     const { isAuthenticated, loading } = useContext(AuthContext);
@@ -43,6 +46,9 @@ const AppContent = () => {
                         <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
                         <Route path="/perfil/:id" element={<Perfil />} />
                         <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
+                        <Route path="/verify/:token" element={<Verification />} />
+                        <Route path="/verification-success" element={<VerificationSuccess />} />
+                        <Route path="/verification-failure" element={<VerificationFailure />} />
                         <Route path="*" element={<Navigate to="/" />} />
                     </Routes>
                 </main>
