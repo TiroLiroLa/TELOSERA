@@ -41,11 +41,11 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
             <h2>{textosUI.titulo}</h2>
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                    <label>{textosUI.labelNota1} (1 a 5)</label>
+                    <label className="required">{textosUI.labelNota1} (1 a 5)</label>
                     <input type="number" min="1" max="5" value={formData.nota1} onChange={e => setFormData({ ...formData, nota1: e.target.value })} />
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelNota2} (1 a 5)</label>
+                    <label className="required">{textosUI.labelNota2} (1 a 5)</label>
                     <input type="number" min="1" max="5" value={formData.nota2} onChange={e => setFormData({ ...formData, nota2: e.target.value })} />
                 </div>
                 <div className="form-group">

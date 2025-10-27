@@ -130,15 +130,15 @@ const CriarAnuncio = () => {
                     </div>
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelTitulo || 'Título'}</label>
+                    <label className="required">{textosUI.labelTitulo || 'Título'}</label>
                     <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required />
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelDescricao || 'Descrição'}</label>
+                    <label className="required">{textosUI.labelDescricao || 'Descrição'}</label>
                     <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required />
                 </div>
                 <div className="form-group">
-                    <label>Especialização</label>
+                    <label className="required">Especialização</label>
                     <select name="fk_Area_id_area" value={formData.fk_Area_id_area} onChange={onChange} required>
                         <option value="">-- Selecione uma especialização --</option>
                         {areas.map(area => (
@@ -149,7 +149,7 @@ const CriarAnuncio = () => {
                     </select>
                 </div>
                 <div className="form-group">
-                    <label>Serviço Principal</label>
+                    <label className="required">Serviço Principal</label>
                     <select name="fk_id_servico" value={formData.fk_id_servico} onChange={onChange} required>
                         <option value="">-- Selecione um serviço --</option>
                         {servicos.map(servico => (
@@ -160,7 +160,7 @@ const CriarAnuncio = () => {
                     </select>
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelData || 'Data'}</label>
+                    <label className="required">{textosUI.labelData || 'Data'}</label>
                     <DatePicker selected={dataServico} onChange={(date) => setDataServico(date)} dateFormat="dd/MM/yyyy" minDate={new Date()} className="custom-datepicker-input" />
                 </div>
 

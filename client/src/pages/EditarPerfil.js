@@ -166,7 +166,7 @@ const EditarPerfil = () => {
                         <h2>Dados Básicos</h2>
                         <form onSubmit={onDadosSubmit}>
                             <div className="form-group">
-                                <label>Nome / Razão Social</label>
+                                <label className="required">Nome / Razão Social</label>
                                 <input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({ ...dadosFormData, nome: e.target.value })} />
                             </div>
                             <div className="form-group">
