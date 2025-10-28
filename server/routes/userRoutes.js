@@ -342,7 +342,7 @@ router.post('/register', async (req, res) => {
         const userExists = await client.query('SELECT * FROM Usuario WHERE email = $1 OR identificador = $2', [email, identificador]);
         if (userExists.rows.length > 0) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ msg: 'Usuário com este e-mail ou identificador já existe.' });
+            return res.status(400).json({ msg: 'Usuário com este e-mail ou CPF/CNPJ já existe.' });
         }
 
         let idEndereco = null;

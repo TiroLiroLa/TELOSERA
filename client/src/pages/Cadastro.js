@@ -50,6 +50,32 @@ const Cadastro = () => {
         fetchEstados();
     }, []);
 
+    useEffect(() => {
+        const syncMapToCity = async () => {
+            if (regiaoCity && regiaoEstadoId) {
+                const estado = estados.find(e => e.id_estado === parseInt(regiaoEstadoId));
+                if (estado) {
+                    try {
+                        // A lógica de geocoding agora é feita diretamente aqui
+                        const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
+                        // Usamos o axios diretamente, não mais o hook
+                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                            headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
+                        });
+
+                        if (res.data && res.data.length > 0) {
+                            const { lat, lon } = res.data[0];
+                            setLocation({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar coordenadas da cidade:", error);
+                    }
+                }
+            }
+        };
+        syncMapToCity();
+    }, [regiaoCity, regiaoEstadoId, estados]); // Adiciona 'estados' à dependência
+
     const onChange = e => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -170,17 +196,17 @@ const Cadastro = () => {
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
                 <div className="form-group">
-                    <label htmlFor="nome">Nome Completo / Razão Social</label>
+                    <label htmlFor="nome" className="required">Nome Completo / Razão Social</label>
                     <input type="text" id="nome" name="nome" value={formData.nome} onChange={onChange} />
                     {errors.nome && <span className="field-error">{errors.nome}</span>}
                 </div>
                 <div className="form-group">
-                    <label htmlFor="identificador">{idLabel}</label>
+                    <label htmlFor="identificador" className="required">{idLabel}</label>
                     <input type="text" id="identificador" name="identificador" value={formData.identificador} onChange={onChange} placeholder={idPlaceholder} />
                     {errors.identificador && <span className="field-error">{errors.identificador}</span>}
                 </div>
                 <div className="form-group">
-                    <label htmlFor="email">E-mail</label>
+                    <label htmlFor="email" className="required">E-mail</label>
                     <input type="email" id="email" name="email" value={formData.email} onChange={onChange} />
                     {errors.email && <span className="field-error">{errors.email}</span>}
                 </div>
@@ -249,19 +275,19 @@ const Cadastro = () => {
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h2>Endereço e Região de Atuação</h2>
 
-                    <Tabs>
+                        <Tabs>
                         <Tab label="1. Endereço">
                             <p>Primeiro, preencha seu endereço principal.</p>
                             <div className="form-group">
-                                <label>CEP</label>
+                                <label className="required">CEP</label>
                                 <input type="text" name="cep" value={formData.cep} onChange={onChange} />
                             </div>
                             <div className="form-group">
-                                <label>Rua</label>
+                                <label className="required">Logradouro</label>
                                 <input type="text" name="rua" value={formData.rua} onChange={onChange} />
                             </div>
                             <div className="form-group">
-                                <label>Número</label>
+                                <label className="required">Número</label>
                                 <input type="text" name="numero" value={formData.numero} onChange={onChange} />
                             </div>
                             <div className="form-group">
@@ -269,40 +295,41 @@ const Cadastro = () => {
                                 <input type="text" name="complemento" value={formData.complemento} onChange={onChange} />
                             </div>
                             <div className="form-group">
-                                <label>Estado</label>
+                                <label className="required">Estado</label>
                                 <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required>
                                     <option value="">-- Selecione --</option>
                                     {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Cidade</label>
+                                <label className="required">Cidade</label>
                                 <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} />
                             </div>
                         </Tab>
                         <Tab label="2. Região de Atuação">
-                            <p>A área onde você oferece seus serviços ou busca profissionais.</p>
-
+                            <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
+                            
                             <div className="form-group">
-                                <label>Estado da Região</label>
+                                <label className="required">Estado da Região</label>
                                 <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
                                     <option value="">-- Selecione --</option>
                                     {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Cidade Central da Região</label>
+                                <label className="required">Cidade Central da Região</label>
                                 <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} />
                             </div>
 
                             <div className="form-group">
-                                <label>Ponto Central de Atuação (Clique no mapa)</label>
+                                <label>Ponto Central de Atuação</label>
                                 <div style={{ height: '250px' }}>
-                                    <LocationPicker onLocationSelect={setLocation} initialPosition={location} radiusKm={formData.raio_atuacao} />
+                                    {/* A prop 'onLocationSelect' agora aponta para a função simplificada */}
+                                    <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} radiusKm={formData.raio_atuacao} />
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Raio de Atuação (km)</label>
+                                <label className="required">Raio de Atuação (km)</label>
                                 <input type="number" name="raio_atuacao" value={formData.raio_atuacao} onChange={onChange} />
                             </div>
                         </Tab>

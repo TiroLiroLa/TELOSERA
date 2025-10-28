@@ -50,6 +50,29 @@ const CriarAnuncio = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        const syncMapToCity = async () => {
+            if (regiaoCity && regiaoEstadoId) {
+                const estado = estados.find(e => e.id_estado === parseInt(regiaoEstadoId));
+                if (estado) {
+                    try {
+                        const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
+                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                            headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
+                        });
+                        if (res.data && res.data.length > 0) {
+                            const { lat, lon } = res.data[0];
+                            setLocation({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar coordenadas da cidade:", error);
+                    }
+                }
+            }
+        };
+        syncMapToCity();
+    }, [regiaoCity, regiaoEstadoId, estados]);
+
     const handleFileChange = (e) => {
         if (e.target.files) {
             const filesArray = Array.from(e.target.files);
@@ -130,15 +153,15 @@ const CriarAnuncio = () => {
                     </div>
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelTitulo || 'Título'}</label>
+                    <label className="required">{textosUI.labelTitulo || 'Título'}</label>
                     <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required />
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelDescricao || 'Descrição'}</label>
+                    <label className="required">{textosUI.labelDescricao || 'Descrição'}</label>
                     <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required />
                 </div>
                 <div className="form-group">
-                    <label>Especialização</label>
+                    <label className="required">Especialização</label>
                     <select name="fk_Area_id_area" value={formData.fk_Area_id_area} onChange={onChange} required>
                         <option value="">-- Selecione uma especialização --</option>
                         {areas.map(area => (
@@ -149,7 +172,7 @@ const CriarAnuncio = () => {
                     </select>
                 </div>
                 <div className="form-group">
-                    <label>Serviço Principal</label>
+                    <label className="required">Serviço Principal</label>
                     <select name="fk_id_servico" value={formData.fk_id_servico} onChange={onChange} required>
                         <option value="">-- Selecione um serviço --</option>
                         {servicos.map(servico => (
@@ -160,7 +183,7 @@ const CriarAnuncio = () => {
                     </select>
                 </div>
                 <div className="form-group">
-                    <label>{textosUI.labelData || 'Data'}</label>
+                    <label className="required">{textosUI.labelData || 'Data'}</label>
                     <DatePicker selected={dataServico} onChange={(date) => setDataServico(date)} dateFormat="dd/MM/yyyy" minDate={new Date()} className="custom-datepicker-input" />
                 </div>
 
@@ -207,6 +230,7 @@ const CriarAnuncio = () => {
                         <div className="form-group">
                             <label>Ponto Exato (Opcional)</label>
                             <div style={{ height: '250px' }}>
+                                {/* Conecta a função simplificada */}
                                 <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} />
                             </div>
                         </div>
