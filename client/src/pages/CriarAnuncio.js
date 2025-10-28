@@ -50,6 +50,29 @@ const CriarAnuncio = () => {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        const syncMapToCity = async () => {
+            if (regiaoCity && regiaoEstadoId) {
+                const estado = estados.find(e => e.id_estado === parseInt(regiaoEstadoId));
+                if (estado) {
+                    try {
+                        const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
+                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                            headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
+                        });
+                        if (res.data && res.data.length > 0) {
+                            const { lat, lon } = res.data[0];
+                            setLocation({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar coordenadas da cidade:", error);
+                    }
+                }
+            }
+        };
+        syncMapToCity();
+    }, [regiaoCity, regiaoEstadoId, estados]);
+
     const handleFileChange = (e) => {
         if (e.target.files) {
             const filesArray = Array.from(e.target.files);
@@ -207,6 +230,7 @@ const CriarAnuncio = () => {
                         <div className="form-group">
                             <label>Ponto Exato (Opcional)</label>
                             <div style={{ height: '250px' }}>
+                                {/* Conecta a função simplificada */}
                                 <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} />
                             </div>
                         </div>

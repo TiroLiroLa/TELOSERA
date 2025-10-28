@@ -47,6 +47,32 @@ const Cadastro = () => {
         fetchEstados();
     }, []);
 
+    useEffect(() => {
+        const syncMapToCity = async () => {
+            if (regiaoCity && regiaoEstadoId) {
+                const estado = estados.find(e => e.id_estado === parseInt(regiaoEstadoId));
+                if (estado) {
+                    try {
+                        // A lógica de geocoding agora é feita diretamente aqui
+                        const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
+                        // Usamos o axios diretamente, não mais o hook
+                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                            headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
+                        });
+
+                        if (res.data && res.data.length > 0) {
+                            const { lat, lon } = res.data[0];
+                            setLocation({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar coordenadas da cidade:", error);
+                    }
+                }
+            }
+        };
+        syncMapToCity();
+    }, [regiaoCity, regiaoEstadoId, estados]); // Adiciona 'estados' à dependência
+
     const onChange = e => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
@@ -231,7 +257,7 @@ const Cadastro = () => {
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h2>Endereço e Região de Atuação</h2>
 
-                    <Tabs>
+                        <Tabs>
                         <Tab label="1. Endereço">
                             <p>Primeiro, preencha seu endereço principal.</p>
                             <div className="form-group">
@@ -263,8 +289,8 @@ const Cadastro = () => {
                             </div>
                         </Tab>
                         <Tab label="2. Região de Atuação">
-                            <p>A área onde você oferece seus serviços ou busca profissionais.</p>
-
+                            <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
+                            
                             <div className="form-group">
                                 <label className="required">Estado da Região</label>
                                 <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
@@ -278,9 +304,10 @@ const Cadastro = () => {
                             </div>
 
                             <div className="form-group">
-                                <label className="required">Ponto Central de Atuação (Clique no mapa)</label>
+                                <label>Ponto Central de Atuação</label>
                                 <div style={{ height: '250px' }}>
-                                    <LocationPicker onLocationSelect={setLocation} initialPosition={location} radiusKm={formData.raio_atuacao} />
+                                    {/* A prop 'onLocationSelect' agora aponta para a função simplificada */}
+                                    <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} radiusKm={formData.raio_atuacao} />
                                 </div>
                             </div>
                             <div className="form-group">
