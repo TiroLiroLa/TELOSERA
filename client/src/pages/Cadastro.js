@@ -7,6 +7,8 @@ import Modal from '../components/Modal';
 import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
+import PasswordInput from '../components/PasswordInput';
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const Cadastro = () => {
     const [etapa, setEtapa] = useState(1);
@@ -72,9 +74,10 @@ const Cadastro = () => {
             if (!emailRegex.test(email)) newErrors.email = 'Formato de e-mail inválido.';
         }
 
-        if (!senha) newErrors.senha = 'Senha é obrigatória.';
-        else if (senha.length < 6) newErrors.senha = 'A senha deve ter no mínimo 6 caracteres.';
-        if (senha !== confirmarSenha) newErrors.confirmarSenha = 'As senhas não coincidem.';
+        const isPasswordStrong = senha.length >= 6 && /(?=.*[A-Z])/.test(senha) && /(?=.*[0-9])/.test(senha);
+        if (!isPasswordStrong) {
+            newErrors.senha = "A senha não atende a todos os critérios de segurança.";
+        }
 
         if (!identificador.trim()) {
             newErrors.identificador = 'CPF / CNPJ é obrigatório.';
@@ -186,13 +189,26 @@ const Cadastro = () => {
                     <input type="tel" id="telefone" name="telefone" value={formData.telefone} onChange={onChange} />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="senha">Senha</label>
-                    <input type="password" id="senha" name="senha" value={formData.senha} onChange={onChange} />
+                    <label htmlFor="senha" className="required">Senha</label>
+                    <PasswordInput
+                        id="senha"
+                        name="senha"
+                        value={formData.senha}
+                        onChange={onChange}
+                        required
+                    />
+                    <PasswordStrengthMeter password={formData.senha} />
                     {errors.senha && <span className="field-error">{errors.senha}</span>}
                 </div>
                 <div className="form-group">
-                    <label htmlFor="confirmarSenha">Confirmar Senha</label>
-                    <input type="password" id="confirmarSenha" name="confirmarSenha" value={formData.confirmarSenha} onChange={onChange} />
+                    <label htmlFor="confirmarSenha" className="required">Confirmar Senha</label>
+                    <PasswordInput
+                        id="confirmarSenha"
+                        name="confirmarSenha"
+                        value={formData.confirmarSenha}
+                        onChange={onChange}
+                        required
+                    />
                     {errors.confirmarSenha && <span className="field-error">{errors.confirmarSenha}</span>}
                 </div>
 

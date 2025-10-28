@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
+import PasswordInput from '../components/PasswordInput';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' });
@@ -48,14 +49,13 @@ const Login = () => {
           </div>
           <div className="form-group">
             <label htmlFor="senha">Senha</label>
-            <input
-              type="password"
-              id="senha"
-              placeholder="Sua senha"
-              name="senha"
-              value={senha}
-              onChange={onChange}
-              required
+            <PasswordInput
+                id="senha"
+                name="senha"
+                value={senha}
+                onChange={onChange}
+                placeholder="Sua senha"
+                required
             />
           </div>
           <button type="submit" className="btn btn-primary">
