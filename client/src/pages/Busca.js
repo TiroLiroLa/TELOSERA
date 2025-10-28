@@ -12,20 +12,20 @@ const Busca = () => {
     const [resultados, setResultados] = useState([]);
     const [loading, setLoading] = useState(true);
     const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
-    const inicializarFiltros = () => {
+    const getFiltrosFromURL = useCallback(() => {
         return {
             q: searchParams.get('q') || '',
             tipo: searchParams.get('tipo') || '',
             area: searchParams.get('area') || '',
             servico: searchParams.get('servico') || '',
-            sortBy: searchParams.get('sortBy') || '',
+            sortBy: searchParams.get('sortBy') || 'relevance',
             lat: searchParams.get('lat') || '',
             lng: searchParams.get('lng') || '',
             raio: searchParams.get('raio') || '',
         };
-    };
+    }, [searchParams]);
 
-    const [filtros, setFiltros] = useState(inicializarFiltros);
+    const [filtros, setFiltros] = useState(getFiltrosFromURL);
     const [areas, setAreas] = useState([]);
     const [servicos, setServicos] = useState([]);
 
@@ -33,6 +33,10 @@ const Busca = () => {
     const [tempLocation, setTempLocation] = useState(null);
     const [tempRaio, setTempRaio] = useState(filtros.raio || '20');
     const isGeoSearch = filtros.lat && filtros.lng;
+
+    useEffect(() => {
+        setFiltros(getFiltrosFromURL());
+    }, [searchParams, getFiltrosFromURL]);
 
     const fetchResultados = useCallback(async () => {
         try {
@@ -57,28 +61,18 @@ const Busca = () => {
 
     useEffect(() => {
         fetchResultados();
+    }, [fetchResultados]);
 
+    const updateFiltros = (novosFiltros) => {
+        // Limpa chaves vazias antes de atualizar a URL
         const filtrosAtivos = {};
-        for (const key in filtros) {
-            if (filtros[key]) {
-                filtrosAtivos[key] = filtros[key];
+        for (const key in novosFiltros) {
+            if (novosFiltros[key]) {
+                filtrosAtivos[key] = novosFiltros[key];
             }
         }
         setSearchParams(filtrosAtivos, { replace: true });
-
-    }, [fetchResultados, setSearchParams, filtros]);
-
-    useEffect(() => {
-        const fetchFiltroData = async () => {
-            const [resAreas, resServicos] = await Promise.all([
-                axios.get('/api/dados/areas'),
-                axios.get('/api/dados/servicos')
-            ]);
-            setAreas(resAreas.data);
-            setServicos(resServicos.data);
-        };
-        fetchFiltroData();
-    }, []);
+    };
 
     const handleOpenMapModal = async () => {
         if (isAuthenticated && !tempLocation) {
@@ -97,26 +91,19 @@ const Busca = () => {
 
     const handleFiltroChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'sortBy' && value === 'relevance') {
-            setFiltros(prev => {
-                const newFilters = { ...prev };
-                delete newFilters.sortBy;
-                return newFilters;
-            });
-        } else {
-            setFiltros(prev => ({ ...prev, [name]: value }));
-        }
+        const novosFiltros = { ...filtros, [name]: value };
+        updateFiltros(novosFiltros);
     };
 
     const handleApplyGeoFilter = () => {
         if (tempLocation && tempRaio) {
-            setFiltros(prev => ({
-                ...prev,
+            updateFiltros({
+                ...filtros,
                 lat: tempLocation.lat,
                 lng: tempLocation.lng,
                 raio: tempRaio,
                 sortBy: 'distance'
-            }));
+            });
             setMapModalOpen(false);
         } else {
             alert("Por favor, selecione um local no mapa e defina um raio.");

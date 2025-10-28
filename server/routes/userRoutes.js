@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { sendVerificationEmail } = require('../utils/emailService');
 const db = require('../config/db');
 const auth = require('../middleware/auth');
 
@@ -19,6 +20,24 @@ router.get('/me', auth, async (req, res) => {
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erro no Servidor');
+    }
+});
+
+// <<< NOVA ROTA para verificação
+// @route   GET /api/users/verify/:token
+router.get('/verify/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        await db.query('UPDATE Usuario SET verificado = TRUE WHERE id_usuario = $1', [decoded.userId]);
+        
+        // <<< A CORREÇÃO: Retorna uma mensagem de sucesso em JSON
+        res.status(200).json({ msg: 'E-mail verificado com sucesso!' });
+
+    } catch (err) {
+        // Se o token for inválido ou expirado, retorna um erro em JSON
+        res.status(400).json({ msg: 'O link de verificação é inválido ou expirou.' });
     }
 });
 
@@ -357,8 +376,19 @@ router.post('/register', async (req, res) => {
             );
         }
 
+        // --- LÓGICA DE VERIFICAÇÃO DE E-MAIL ---
+        // Cria um token de verificação que expira em 1 hora
+        const verificationToken = jwt.sign(
+            { userId: newUser.id_usuario },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+        
+        // Envia o e-mail
+        await sendVerificationEmail(newUser.email, verificationToken);
+
         await client.query('COMMIT');
-        res.status(201).json({ msg: 'Usuário cadastrado com sucesso!', user: newUser });
+        res.status(201).json({ msg: 'Cadastro realizado! Por favor, verifique seu e-mail para ativar sua conta.' });
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -386,6 +416,10 @@ router.post('/login', async (req, res) => {
         }
 
         const user = userResult.rows[0];
+
+        if (!user.verificado) {
+            return res.status(401).json({ msg: 'Sua conta ainda não foi verificada. Por favor, cheque seu e-mail.' });
+        }
 
         const isMatch = await bcrypt.compare(senha, user.senha);
 

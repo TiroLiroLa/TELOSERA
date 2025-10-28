@@ -7,6 +7,8 @@ import Modal from '../components/Modal';
 import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
+import PasswordInput from '../components/PasswordInput';
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const Cadastro = () => {
     const [etapa, setEtapa] = useState(1);
@@ -33,6 +35,7 @@ const Cadastro = () => {
     const [enderecoCity, setEnderecoCity] = useState(null);
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
 
 
     useEffect(() => {
@@ -97,9 +100,10 @@ const Cadastro = () => {
             if (!emailRegex.test(email)) newErrors.email = 'Formato de e-mail inválido.';
         }
 
-        if (!senha) newErrors.senha = 'Senha é obrigatória.';
-        else if (senha.length < 6) newErrors.senha = 'A senha deve ter no mínimo 6 caracteres.';
-        if (senha !== confirmarSenha) newErrors.confirmarSenha = 'As senhas não coincidem.';
+        const isPasswordStrong = senha.length >= 6 && /(?=.*[A-Z])/.test(senha) && /(?=.*[0-9])/.test(senha);
+        if (!isPasswordStrong) {
+            newErrors.senha = "A senha não atende a todos os critérios de segurança.";
+        }
 
         if (!identificador.trim()) {
             newErrors.identificador = 'CPF / CNPJ é obrigatório.';
@@ -135,7 +139,8 @@ const Cadastro = () => {
         };
 
         try {
-            await axios.post('/api/users/register', dadosParaEnviar);
+            const res = await axios.post('/api/users/register', dadosParaEnviar);
+            setSuccessMessage(res.data.msg);
             setEtapa(3);
         } catch (err) {
             const errorMsg = err.response?.data?.msg || 'Ocorreu um erro. Tente novamente.';
@@ -211,12 +216,25 @@ const Cadastro = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="senha" className="required">Senha</label>
-                    <input type="password" id="senha" name="senha" value={formData.senha} onChange={onChange} />
+                    <PasswordInput
+                        id="senha"
+                        name="senha"
+                        value={formData.senha}
+                        onChange={onChange}
+                        required
+                    />
+                    <PasswordStrengthMeter password={formData.senha} />
                     {errors.senha && <span className="field-error">{errors.senha}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="confirmarSenha" className="required">Confirmar Senha</label>
-                    <input type="password" id="confirmarSenha" name="confirmarSenha" value={formData.confirmarSenha} onChange={onChange} />
+                    <PasswordInput
+                        id="confirmarSenha"
+                        name="confirmarSenha"
+                        value={formData.confirmarSenha}
+                        onChange={onChange}
+                        required
+                    />
                     {errors.confirmarSenha && <span className="field-error">{errors.confirmarSenha}</span>}
                 </div>
 
@@ -241,9 +259,9 @@ const Cadastro = () => {
 
     const renderEtapa3 = () => (
         <div>
-            <h3>Cadastro Realizado com Sucesso!</h3>
-            <p>Seu perfil foi criado. Agora você já pode fazer login na plataforma.</p>
-            <Link to="/login" className="btn btn-primary">Ir para o Login</Link>
+            <h3>Quase lá!</h3>
+            <p>{successMessage}</p>
+            <p>Enviamos um link de ativação para o seu endereço de e-mail.</p>
         </div>
     );
 

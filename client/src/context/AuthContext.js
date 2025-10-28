@@ -31,19 +31,18 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, senha) => {
-    const body = JSON.stringify({ email, senha });
-    const config = { headers: { 'Content-Type': 'application/json' } };
-    try {
-      const res = await axios.post('/api/users/login', body, config);
-      localStorage.setItem('token', res.data.token);
-      setToken(res.data.token);
-      await loadUser();
-      return true;
-    } catch (err) {
-      localStorage.removeItem('token');
-      return false;
-    }
-  };
+        const body = JSON.stringify({ email, senha });
+        const config = { headers: { 'Content-Type': 'application/json' } };
+        try {
+            const res = await axios.post('/api/users/login', body, config);
+            localStorage.setItem('token', res.data.token);
+            setToken(res.data.token);
+            await loadUser();
+        } catch (err) {
+            localStorage.removeItem('token');
+            throw err.response.data;
+        }
+    };
 
   const logout = () => {
     localStorage.removeItem('token');

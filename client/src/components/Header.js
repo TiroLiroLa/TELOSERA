@@ -9,10 +9,20 @@ const Header = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchType, setSearchType] = useState('');
 
     const handleSearch = (e) => {
         e.preventDefault();
-        navigate(`/busca?q=${searchTerm}`);
+        
+        const params = new URLSearchParams();
+        if (searchTerm.trim()) {
+            params.append('q', searchTerm.trim());
+        }
+        if (searchType) {
+            params.append('tipo', searchType);
+        }
+
+        navigate(`/busca?${params.toString()}`);
     };
 
     return (
@@ -23,9 +33,21 @@ const Header = () => {
                 </Link>
 
                 <form onSubmit={handleSearch} className="search-bar-placeholder">
-                    <input
-                        type="text"
-                        placeholder="Buscar..."
+                    <div className="search-select-wrapper">
+                        <select 
+                            className="search-type-select" 
+                            value={searchType}
+                            onChange={(e) => setSearchType(e.target.value)}
+                        >
+                            <option value="">Todos</option>
+                            <option value="O">Vagas</option>
+                            <option value="S">Serviços</option>
+                        </select>
+                    </div>
+                    
+                    <input 
+                        type="text" 
+                        placeholder="Buscar..." 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
