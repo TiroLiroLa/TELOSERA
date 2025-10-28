@@ -38,13 +38,57 @@
     display: flex;
 }
 
+.search-type-select {
+    appearance: none; /* Remove o estilo padrão do SO */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    
+    padding: 0.75rem 2rem 0.75rem 1rem; /* Aumenta o padding à direita para o ícone */
+    border: 1px solid #ccc;
+    border-right: 1px solid #e0e0e0;
+    border-radius: 20px 0 0 20px;
+    background-color: #f5f5f5;
+    font-size: 0.9rem;
+    color: #555;
+    outline: none;
+    cursor: pointer;
+    
+    /* Garante que o texto não sobreponha o ícone */
+    background-image: none;
+}
+
+.search-select-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.search-select-wrapper::after {
+    content: '';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    
+    width: 16px;
+    height: 16px;
+    
+    background-image: url('../assets/arrow-down.svg'); /* Caminho para o seu SVG */
+    background-repeat: no-repeat;
+    background-position: center;
+    
+    pointer-events: none; /* Garante que o clique passe para o select */
+}
+
 .search-bar-placeholder input {
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid #ccc;
-    border-radius: 20px 0 0 20px;
-    font-size: 1rem;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left: none; /* Remove a borda esquerda para se juntar ao select */
     border-right: none;
+    border-radius: 0; /* Remove o arredondamento do input */
+    font-size: 1rem;
     background-color: #f5f5f5;
 }
 
