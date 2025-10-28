@@ -39,5 +39,28 @@ export const useGeocoding = () => {
         }
     };
 
-    return { isGeocoding, geocodingError, findCityAndState };
+    const findCoordsFromCity = async (cityName, stateUf) => {
+        setIsGeocoding(true);
+        setGeocodingError('');
+        try {
+            // Monta a query para o Nominatim
+            const query = `city=${encodeURIComponent(cityName)}&state=${encodeURIComponent(stateUf)}&country=Brazil`;
+            const res = await nominatimApi.get(`/search?${query}&format=json&limit=1`);
+
+            if (res.data && res.data.length > 0) {
+                const { lat, lon } = res.data[0];
+                setIsGeocoding(false);
+                return { success: true, lat: parseFloat(lat), lng: parseFloat(lon) };
+            } else {
+                throw new Error("Não foi possível encontrar as coordenadas para esta cidade.");
+            }
+        } catch (error) {
+            console.error("Erro no geocoding:", error);
+            setGeocodingError("Não foi possível encontrar a localização da cidade selecionada.");
+            setIsGeocoding(false);
+            return { success: false };
+        }
+    };
+
+    return { isGeocoding, geocodingError, findCityAndState, findCoordsFromCity };
 };

@@ -5,11 +5,12 @@ import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './EditarPerfil.css';
 
 const EditarPerfil = () => {
     const { user, loading: authLoading } = useContext(AuthContext);
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('dados');
     const [dadosFormData, setDadosFormData] = useState({ nome: '', telefone: '' });
     const [todasAreas, setTodasAreas] = useState([]);
@@ -32,32 +33,57 @@ const EditarPerfil = () => {
         const fetchData = async () => {
             if (!user) return;
             try {
-                const [resTodasAreas, resMinhasAreas, resEstados] = await Promise.all([
+                const [resTodasAreas, resMinhasAreas, resEstados, resMinhaRegiao] = await Promise.all([
                     axios.get('/api/dados/areas'),
                     axios.get('/api/users/me/areas'),
-                    axios.get('/api/dados/estados')
+                    axios.get('/api/dados/estados'),
+                    axios.get('/api/users/me/regiao').catch(err => null) // Não quebra se o usuário não tiver região
                 ]);
                 setTodasAreas(resTodasAreas.data);
                 setMinhasAreas(new Set(resMinhasAreas.data.map(area => area.id_area)));
                 setEstados(resEstados.data);
+
+                if (resMinhaRegiao && resMinhaRegiao.data) {
+                    const { lat, lng, raio } = resMinhaRegiao.data;
+                    setNewLocation({ lat, lng });
+                    setNewRaio(raio);
+                }
+
             } catch (error) {
                 console.error("Erro ao carregar dados para edição", error);
             }
         };
         fetchData();
-
-        const fetchEstados = async () => {
-            try {
-                const res = await axios.get('/api/dados/estados');
-                setEstados(res.data);
-            } catch (err) {
-                console.error("Erro ao buscar estados", err);
-            }
-        };
-        fetchEstados();
     }, [user]);
 
+    useEffect(() => {
+        const syncMapToCity = async () => {
+            if (selectedCity && selectedEstadoId) {
+                const estado = estados.find(e => e.id_estado === parseInt(selectedEstadoId));
+                if (estado) {
+                    try {
+                        const query = `city=${encodeURIComponent(selectedCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
+                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                            headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
+                        });
+                        if (res.data && res.data.length > 0) {
+                            const { lat, lon } = res.data[0];
+                            setNewLocation({ lat: parseFloat(lat), lng: parseFloat(lon) });
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar coordenadas da cidade:", error);
+                    }
+                }
+            }
+        };
+        syncMapToCity();
+    }, [selectedCity, selectedEstadoId, estados]);
+
     const handleCreateCity = async (cityName) => {
+        if (!selectedEstadoId) {
+            alert("Por favor, selecione um estado primeiro.");
+            return null;
+        }
         try {
             const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: selectedEstadoId });
             return res.data;
@@ -128,6 +154,8 @@ const EditarPerfil = () => {
         }
     };
 
+    if (authLoading) return <div>Carregando...</div>;
+    if (!user) return <div>Você precisa estar logado para editar o perfil.</div>;
 
     return (
         <div className="edit-perfil-container">
@@ -165,14 +193,8 @@ const EditarPerfil = () => {
                     <section className="edit-section">
                         <h2>Dados Básicos</h2>
                         <form onSubmit={onDadosSubmit}>
-                            <div className="form-group">
-                                <label>Nome / Razão Social</label>
-                                <input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({ ...dadosFormData, nome: e.target.value })} />
-                            </div>
-                            <div className="form-group">
-                                <label>Telefone</label>
-                                <input type="tel" name="telefone" value={dadosFormData.telefone} onChange={e => setDadosFormData({ ...dadosFormData, telefone: e.target.value })} />
-                            </div>
+                            <div className="form-group"><label className="required">Nome / Razão Social</label><input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({ ...dadosFormData, nome: e.target.value })} /></div>
+                            <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" value={dadosFormData.telefone} onChange={e => setDadosFormData({ ...dadosFormData, telefone: e.target.value })} /></div>
                             <button type="submit" className="btn btn-primary">Salvar Alterações</button>
                         </form>
                     </section>
@@ -183,12 +205,7 @@ const EditarPerfil = () => {
                         <h2>Minhas Especialidades</h2>
                         <form onSubmit={onAreasSubmit}>
                             <div className="especialidades-grid">
-                                {todasAreas.map(area => (
-                                    <label key={area.id_area} className="checkbox-label">
-                                        <input type="checkbox" checked={minhasAreas.has(area.id_area)} onChange={() => handleAreaChange(area.id_area)} />
-                                        {area.nome}
-                                    </label>
-                                ))}
+                                {todasAreas.map(area => (<label key={area.id_area} className="checkbox-label"><input type="checkbox" checked={minhasAreas.has(area.id_area)} onChange={() => handleAreaChange(area.id_area)} />{area.nome}</label>))}
                             </div>
                             <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Salvar Especialidades</button>
                         </form>
@@ -199,9 +216,7 @@ const EditarPerfil = () => {
                     <section className="edit-section">
                         <h2>Região de Atuação</h2>
                         <p>Defina a cidade central, o ponto no mapa e o raio onde você atua.</p>
-                        <button type="button" onClick={() => setIsModalOpen(true)} className="btn btn-secondary">
-                            Abrir Editor de Região
-                        </button>
+                        <button type="button" onClick={() => setIsModalOpen(true)} className="btn btn-secondary">Abrir Editor de Região</button>
                     </section>
                 )}
             </main>
@@ -209,44 +224,11 @@ const EditarPerfil = () => {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Selecione sua nova região de atuação</h2>
                 <form onSubmit={onRegiaoSubmit}>
-                    <LocationPicker
-                        onLocationSelect={onLocationSelect}
-                        initialPosition={newLocation}
-                        radiusKm={newRaio}
-                    />
-                    <select
-                        value={selectedEstadoId}
-                        onChange={e => {
-                            setSelectedEstadoId(e.target.value);
-                            setSelectedCity(null);
-                        }}
-                        required
-                    >
-                        <option value="">-- Selecione um Estado --</option>
-                        {estados.map(estado => (
-                            <option key={estado.id_estado} value={estado.id_estado}>
-                                {estado.nome} ({estado.uf})
-                            </option>
-                        ))}
-                    </select>
-                    <CityAutocomplete
-                        estadoId={selectedEstadoId}
-                        onCitySelect={setSelectedCity}
-                        onCityCreate={handleCreateCity}
-                        selectedCity={selectedCity}
-                    />
-                    {selectedCity && <p>Cidade selecionada: <strong>{selectedCity.nome}</strong></p>}
-                    <label>
-                        Novo Raio de Atuação (em km):
-                        <input
-                            type="number"
-                            value={newRaio}
-                            onChange={(e) => setNewRaio(e.target.value)}
-                            placeholder="Ex: 50"
-                            required
-                        />
-                    </label>
-                    <button type="submit" style={{ marginTop: '1rem' }}>Salvar Nova Região</button>
+                    <div className="form-group"><label>Estado</label><select value={selectedEstadoId} onChange={e => { setSelectedEstadoId(e.target.value); setSelectedCity(null); }} required><option value="">-- Selecione um Estado --</option>{estados.map(estado => (<option key={estado.id_estado} value={estado.id_estado}>{estado.nome} ({estado.uf})</option>))}</select></div>
+                    <div className="form-group"><label>Cidade</label><CityAutocomplete estadoId={selectedEstadoId} onCitySelect={setSelectedCity} onCityCreate={handleCreateCity} selectedCity={selectedCity} /></div>
+                    <div className="form-group"><label>Ponto Central (Ajuste Fino)</label><div style={{height: '250px'}}><LocationPicker onLocationSelect={onLocationSelect} initialPosition={newLocation} radiusKm={newRaio} /></div></div>
+                    <div className="form-group"><label>Novo Raio de Atuação (em km):</label><input type="number" value={newRaio} onChange={(e) => setNewRaio(e.target.value)} placeholder="Ex: 50" required /></div>
+                    <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Salvar Nova Região</button>
                 </form>
             </Modal>
         </div>

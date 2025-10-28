@@ -47,3 +47,9 @@ main {
 .star-empty {
     color: #e4e5e9;
 }
+
+.form-group label.required::after {
+    content: " *";
+    color: #dc3545;
+    font-weight: bold;
+}
