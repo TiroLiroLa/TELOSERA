@@ -9,6 +9,7 @@ import Modal from '../components/Modal';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import './CriarAnuncio.css';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const CriarAnuncio = () => {
     const navigate = useNavigate();
@@ -142,6 +143,8 @@ const CriarAnuncio = () => {
         <div className="criar-anuncio-container">
             <h1>{textosUI.tituloPagina || 'Publicar Anúncio'}</h1>
             <form onSubmit={onSubmit} noValidate>
+                <RequiredNotice /> {/* <-- aviso inserido */}
+
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
                 {/* --- Campos do Formulário --- */}
@@ -212,6 +215,7 @@ const CriarAnuncio = () => {
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Definir Localização</h2>
+                <RequiredNotice /> {/* <-- aviso inserido dentro do modal */}
                 <Tabs>
                     <Tab label="1. Cidade">
                         <div className="form-group">

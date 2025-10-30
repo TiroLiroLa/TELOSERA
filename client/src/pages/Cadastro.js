@@ -9,6 +9,7 @@ import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const Cadastro = () => {
     const [etapa, setEtapa] = useState(1);
@@ -192,6 +193,7 @@ const Cadastro = () => {
 
         return (
             <form onSubmit={onSubmit} className="cadastro-form" noValidate>
+                <RequiredNotice /> {/* <-- aviso inserido */}
                 <button type="button" className="back-button" onClick={() => setEtapa(1)}>&larr; Voltar</button>
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
@@ -274,7 +276,8 @@ const Cadastro = () => {
                 {etapa === 3 && renderEtapa3()}
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h2>Endereço e Região de Atuação</h2>
-
+                    <RequiredNotice /> {/* <-- aviso inserido dentro do modal */}
+                    
                         <Tabs>
                         <Tab label="1. Endereço">
                             <p>Primeiro, preencha seu endereço principal.</p>

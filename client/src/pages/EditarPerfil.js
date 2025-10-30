@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -7,6 +6,7 @@ import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Link, useNavigate } from 'react-router-dom';
 import './EditarPerfil.css';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const EditarPerfil = () => {
     const { user, loading: authLoading } = useContext(AuthContext);
@@ -189,6 +189,7 @@ const EditarPerfil = () => {
             </aside>
 
             <main className="edit-perfil-main">
+                <RequiredNotice /> {/* <-- aviso inserido no topo da área principal */}
                 {activeSection === 'dados' && (
                     <section className="edit-section">
                         <h2>Dados Básicos</h2>

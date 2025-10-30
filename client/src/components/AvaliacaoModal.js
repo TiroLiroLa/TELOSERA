@@ -1,8 +1,8 @@
-
 import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import Modal from './Modal';
+import RequiredNotice from './RequiredNotice'; // <--- adicionado
 
 const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
     const { user } = useContext(AuthContext);
@@ -39,6 +39,7 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <h2>{textosUI.titulo}</h2>
+            <RequiredNotice /> {/* <-- aviso inserido */}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label className="required">{textosUI.labelNota1} (1 a 5)</label>
