@@ -38,6 +38,21 @@ const Busca = () => {
         setFiltros(getFiltrosFromURL());
     }, [searchParams, getFiltrosFromURL]);
 
+    // Efeito para buscar os dados dos filtros (áreas e serviços)
+    useEffect(() => {
+        const fetchFilterData = async () => {
+            try {
+                const [resAreas, resServicos] = await Promise.all([
+                    axios.get('/api/dados/areas'),
+                    axios.get('/api/dados/servicos')
+                ]);
+                setAreas(resAreas.data);
+                setServicos(resServicos.data);
+            } catch (error) { console.error("Erro ao buscar dados para os filtros:", error); }
+        };
+        fetchFilterData();
+    }, []);
+
     const fetchResultados = useCallback(async () => {
         try {
             setLoading(true);

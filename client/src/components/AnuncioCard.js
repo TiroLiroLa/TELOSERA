@@ -9,7 +9,7 @@ const AnuncioCard = ({ anuncio }) => {
     const isOferta = anuncio.tipo === 'O';
 
     const formatDistance = (distanceMeters) => {
-        if (!distanceMeters) return null;
+        if (!distanceMeters && distanceMeters !== 0) return null;
         const distanceKm = distanceMeters / 1000;
         if (distanceKm < 1) {
             return `${Math.round(distanceMeters)} m`;

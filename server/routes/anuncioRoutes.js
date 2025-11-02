@@ -384,7 +384,19 @@ router.get('/', async (req, res) => {
     let paramIndex = 1;
     if (q) { conditions.push(`(a.titulo ILIKE $${paramIndex} OR a.descricao ILIKE $${paramIndex})`); values.push(`%${q}%`); paramIndex++; }
     if (tipo) { conditions.push(`a.tipo = $${paramIndex}`); values.push(tipo.toUpperCase()); paramIndex++; }
-    if (area) { conditions.push(`a.fk_Area_id_area = $${paramIndex}`); values.push(area); paramIndex++; }
+    if (area) {
+        // Verifica se 'area' é um array (ex: ?area=1&area=2) ou um valor único
+        if (Array.isArray(area)) {
+            // Cria placeholders para cada item no array: ($2, $3, $4)
+            const areaPlaceholders = area.map(() => `$${paramIndex++}`);
+            conditions.push(`a.fk_Area_id_area IN (${areaPlaceholders.join(', ')})`);
+            values.push(...area);
+        } else {
+            // Se for apenas um valor, usa a lógica antiga
+            conditions.push(`a.fk_Area_id_area = $${paramIndex++}`);
+            values.push(area);
+        }
+    }
     if (servico) { conditions.push(`a.fk_id_servico = $${paramIndex}`); values.push(servico); paramIndex++; }
     if (lat && lng && raio) { conditions.push(`ST_DWithin(a.local::geography, ST_MakePoint($${paramIndex}, $${paramIndex + 1})::geography, $${paramIndex + 2})`); values.push(lng, lat, raio * 1000); paramIndex += 3; }
     if (conditions.length > 0) {
