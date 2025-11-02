@@ -26,14 +26,15 @@ const AnuncioDetalhe = () => {
     });
 
     useEffect(() => {
-        const fetchAnuncio = async () => {
+        const fetchDados = async () => {
             try {
                 setLoading(true);
-                let params = new URLSearchParams();
+                setStatusCandidatura(prev => ({ ...prev, carregando: true }));
 
+                let params = new URLSearchParams();
                 if (isAuthenticated) {
                     try {
-                        const resRegiao = await axios.get('/api/users/me/regiao');
+                        const resRegiao = await axios.get('/api/users/me/regiao').catch(() => null);
                         const { lat, lng } = resRegiao.data;
                         params.append('lat', lat);
                         params.append('lng', lng);
@@ -45,42 +46,23 @@ const AnuncioDetalhe = () => {
                 const res = await axios.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
                 setAnuncio(res.data);
 
-            } catch (err) {
-                console.error("Erro ao buscar detalhes do anúncio:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (!authLoading) {
-            fetchAnuncio();
-        }
-    }, [idAnuncio, isAuthenticated, authLoading]);
-
-    useEffect(() => {
-        const fetchDados = async () => {
-            try {
-                const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
-                setAnuncio(resAnuncio.data);
-
                 if (isAuthenticated) {
                     const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
                     if (resCandidatura.data.candidatado) {
-                        setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
+                        setStatusCandidatura({ carregando: false, candidatado: true, mensagem: 'Candidatura Enviada' });
                     } else {
-                        setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                        setStatusCandidatura({ carregando: false, candidatado: false, mensagem: '' });
                     }
                 } else {
-                    setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                    setStatusCandidatura({ carregando: false, candidatado: false, mensagem: '' });
                 }
             } catch (err) {
                 console.error("Erro ao buscar dados:", err);
-                setStatusCandidatura({ candidatado: false, mensagem: 'Erro ao carregar dados.', carregando: false });
+                setStatusCandidatura({ carregando: false, candidatado: false, mensagem: 'Erro ao carregar dados.' });
             } finally {
                 setLoading(false);
             }
         };
-
         if (!authLoading) {
             fetchDados();
         }
@@ -113,7 +95,7 @@ const AnuncioDetalhe = () => {
         }
     };
 
-    if (loading) return <div className="container">Carregando...</div>;
+    if (loading || authLoading) return <div className="container">Carregando...</div>;
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
@@ -122,21 +104,21 @@ const AnuncioDetalhe = () => {
     const renderActionButton = () => {
         if (!isAuthenticated) {
             return (
-                <Link to="/login" className="btn btn-primary btn-contact">
+                <Link to="/login" className="btn btn-primary btn-cta">
                     Faça login para se candidatar
                 </Link>
             );
         }
         if (isOwner) {
-            return <button className="btn btn-secondary btn-contact" disabled>Você é o dono deste anúncio</button>;
+            return <button className="btn btn-secondary btn-cta" disabled>Você é o dono deste anúncio</button>;
         }
         if (statusCandidatura.candidatado) {
-            return <button className="btn btn-success btn-contact" disabled>{statusCandidatura.mensagem}</button>;
+            return <button className="btn btn-success btn-cta" disabled>{statusCandidatura.mensagem}</button>;
         }
         return (
             <button
                 onClick={handleCandidatar}
-                className="btn btn-primary btn-contact"
+                className="btn btn-primary btn-cta"
                 disabled={statusCandidatura.carregando}
             >
                 {statusCandidatura.carregando ? 'Enviando...' : 'Candidatar-se'}
@@ -253,18 +235,23 @@ const AnuncioDetalhe = () => {
                             </div>
                         )}
 
-                        <div className="contact-details">
-                            <h4>Contato Direto</h4>
-                            <p><strong>E-mail:</strong> {anuncio.email_usuario || "Não informado"}</p>
-                            <p><strong>Telefone:</strong> {anuncio.telefone_usuario || "Não informado"}</p>
-                        </div>
+                        {isAuthenticated && (
+                            <div className="contact-details">
+                                <h4>Contato Direto</h4>
+                                <p><strong>E-mail:</strong> {anuncio.email_usuario || "Não informado"}</p>
+                                <p><strong>Telefone:</strong> {anuncio.telefone_usuario || "Não informado"}</p>
+                            </div>
+                        )}
 
-                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn btn-primary btn-contact">
-                            Acessar Perfil Completo
+                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn-link-profile">
+                            Ver Perfil Completo
                         </Link>
+                    </div>
+
+                    <div className="cta-container">
                         {renderActionButton()}
                         {!statusCandidatura.candidatado && statusCandidatura.mensagem && (
-                            <p style={{ color: 'red', marginTop: '1rem' }}>{statusCandidatura.mensagem}</p>
+                            <p className="error-message">{statusCandidatura.mensagem}</p>
                         )}
                     </div>
                 </aside>

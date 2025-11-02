@@ -4,6 +4,8 @@ const auth = require('../middleware/auth');
 const authOptional = require('../middleware/authOptional');
 const db = require('../config/db');
 const upload = require('../middleware/upload');
+const { moderateText, moderateImages } = require('../utils/moderationService');
+const fs = require('fs'); // <<< Importar o módulo File System
 
 // @route   GET /api/anuncios/meus-confirmados
 // @desc    Buscar anúncios que o usuário publicou e que foram confimados
@@ -425,59 +427,63 @@ router.get('/', async (req, res) => {
 // @access  Privado
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
     const dadosFormulario = JSON.parse(req.body.jsonData);
-
-    const idUsuario = req.user.id;
-    const {
-        titulo, descricao, tipo,
-        fk_Area_id_area, fk_id_servico, localizacao,
-        fk_id_cidade, data_servico
-    } = dadosFormulario;
-
     const files = req.files;
+    const { titulo, descricao, ...outrosDados } = dadosFormulario;
 
+    // --- ETAPA 1: MODERAÇÃO DE CONTEÚDO ---
+    try {
+        // Modera o texto
+        const textModerationResult = await moderateText(titulo, descricao);
+        if (textModerationResult === "UNSAFE") {
+            // Se o texto for impróprio, deleta os arquivos já salvos e retorna erro
+            if (files) files.forEach(file => fs.unlinkSync(file.path));
+            return res.status(400).json({ msg: "O texto do seu anúncio foi considerado impróprio. Por favor, revise o título e a descrição." });
+        }
+
+        // Modera as imagens
+        if (files && files.length > 0) {
+            // Envia todas as imagens de uma vez para análise
+            const imageModerationResult = await moderateImages(files);
+            
+            if (imageModerationResult === "UNSAFE") {
+                files.forEach(file => fs.unlinkSync(file.path));
+                return res.status(400).json({ msg: "Uma ou mais imagens enviadas foram consideradas impróprias." });
+            }
+        }
+    } catch (moderationError) {
+        if (files) files.forEach(file => fs.unlinkSync(file.path));
+        console.error("Erro durante o processo de moderação:", moderationError);
+        return res.status(500).send("Erro durante o processo de moderação.");
+    }
+
+    // --- ETAPA 2: SALVAR NO BANCO (se a moderação passou) ---
     const client = await db.pool.connect();
     try {
         await client.query('BEGIN');
+
+        const { fk_Area_id_area, fk_id_servico, localizacao, fk_id_cidade, data_servico, tipo } = outrosDados;
+        const idUsuario = req.user.id;
 
         let point = null;
         if (localizacao && localizacao.lng && localizacao.lat) {
             point = `POINT(${localizacao.lng} ${localizacao.lat})`;
         }
-        const novoAnuncioResult = await client.query(
-            `INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) 
-           VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) 
-           RETURNING id_anuncio`,
-            [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]
-        );
+        const novoAnuncioResult = await client.query(`INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) RETURNING id_anuncio`, [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]);
         const idAnuncio = novoAnuncioResult.rows[0].id_anuncio;
 
         if (files && files.length > 0) {
-            const imageInsertPromises = files.map(file => {
-                const imagePath = `/uploads/${file.filename}`;
-                return client.query(
-                    'INSERT INTO Anuncio_Imagem (fk_id_anuncio, caminho_imagem) VALUES ($1, $2)',
-                    [idAnuncio, imagePath]
-                );
-            });
+            const imageInsertPromises = files.map(file => client.query('INSERT INTO Anuncio_Imagem (fk_id_anuncio, caminho_imagem) VALUES ($1, $2)', [idAnuncio, `/uploads/${file.filename}`]));
             await Promise.all(imageInsertPromises);
         }
 
         await client.query('COMMIT');
-        res.status(201).json({ msg: 'Anúncio e imagens salvos com sucesso!' });
+        res.status(201).json({ msg: 'Anúncio publicado com sucesso após verificação!' });
 
-    } catch (err) {
-        if (files) {
-            files.forEach(file => {
-                try {
-                    fs.unlinkSync(file.path);
-                } catch (unlinkErr) {
-                    console.error("Erro ao deletar arquivo após falha:", unlinkErr);
-                }
-            });
-        }
+    } catch (dbError) {
+        if (files) files.forEach(file => fs.unlinkSync(file.path));
         await client.query('ROLLBACK');
-        console.error(err.message);
-        res.status(500).send("Erro no servidor");
+        console.error(dbError.message);
+        res.status(500).send("Erro ao salvar o anúncio no banco de dados.");
     } finally {
         client.release();
     }
