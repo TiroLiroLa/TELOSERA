@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from './Modal';
 import RequiredNotice from './RequiredNotice'; // <--- adicionado
@@ -32,7 +32,7 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
             nota2: formData.nota2
         };
         try {
-            await axios.post('/api/avaliacoes', dadosParaEnviar);
+            await api.post('/api/avaliacoes', dadosParaEnviar);
             onSuccess();
         } catch (err) {
             setError(err.response?.data?.msg || "Erro ao enviar avaliação.");

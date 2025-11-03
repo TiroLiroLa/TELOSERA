@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import StaticMap from '../components/StaticMap';
 import '../components/Styles.css';
 import './Perfil.css';
@@ -31,7 +31,7 @@ const Perfil = () => {
     const fetchPerfil = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`/api/users/${id}`);
+        const res = await api.get(`/api/users/${id}`);
         setPerfil(res.data);
       } catch (err) {
         console.error("Erro ao buscar perfil", err);

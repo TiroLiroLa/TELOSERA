@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import './AnuncioDetalhe.css';
 import Modal from '../components/Modal';
@@ -65,7 +65,7 @@ const AnuncioDetalhe = () => {
                 let params = new URLSearchParams();
                 if (isAuthenticated) {
                     try {
-                        const resRegiao = await axios.get('/api/users/me/regiao').catch(() => null);
+                        const resRegiao = await api.get('/api/users/me/regiao').catch(() => null);
                         const { lat, lng } = resRegiao.data;
                         params.append('lat', lat);
                         params.append('lng', lng);
@@ -74,11 +74,11 @@ const AnuncioDetalhe = () => {
                     }
                 }
 
-                const res = await axios.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
+                const res = await api.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
                 setAnuncio(res.data);
 
                 if (isAuthenticated) {
-                    const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
+                    const resCandidatura = await api.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
                     if (resCandidatura.data.candidatado) {
                         setStatusCandidatura({ carregando: false, candidatado: true, mensagem: 'Candidatura Enviada' });
                     } else {
@@ -111,7 +111,7 @@ const AnuncioDetalhe = () => {
     const handleCandidatar = async () => {
         setStatusCandidatura({ ...statusCandidatura, carregando: true });
         try {
-            const res = await axios.post(`/api/anuncios/${idAnuncio}/candidatar`);
+            const res = await api.post(`/api/anuncios/${idAnuncio}/candidatar`);
             setStatusCandidatura({
                 candidatado: true,
                 mensagem: res.data.msg,

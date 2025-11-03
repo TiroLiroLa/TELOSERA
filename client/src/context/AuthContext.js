@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 export const AuthContext = createContext(null);
 
@@ -12,9 +12,9 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     const localToken = localStorage.getItem('token');
     if (localToken) {
-      axios.defaults.headers.common['x-auth-token'] = localToken;
+      api.defaults.headers.common['x-auth-token'] = localToken;
       try {
-        const res = await axios.get('/api/users/me');
+        const res = await api.get('/api/users/me');
         setUser(res.data);
         setIsAuthenticated(true);
       } catch (err) {
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }) => {
         const body = JSON.stringify({ email, senha });
         const config = { headers: { 'Content-Type': 'application/json' } };
         try {
-            const res = await axios.post('/api/users/login', body, config);
+            const res = await api.post('/api/users/login', body, config);
             localStorage.setItem('token', res.data.token);
             setToken(res.data.token);
             await loadUser();
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    delete axios.defaults.headers.common['x-auth-token'];
+    delete api.defaults.headers.common['x-auth-token'];
   };
 
   return (

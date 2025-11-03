@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { useHelp } from '../context/HelpContext';
 
 const GerenciarAnuncio = () => {
@@ -29,8 +29,8 @@ const GerenciarAnuncio = () => {
             setLoading(true);
             setError('');
             const [resAnuncio, resCandidatos] = await Promise.all([
-                axios.get(`/api/anuncios/${idAnuncio}`),
-                axios.get(`/api/anuncios/${idAnuncio}/candidatos`)
+                api.get(`/api/anuncios/${idAnuncio}`),
+                api.get(`/api/anuncios/${idAnuncio}/candidatos`)
             ]);
             setAnuncio(resAnuncio.data);
             setCandidatos(resCandidatos.data);
@@ -48,7 +48,7 @@ const GerenciarAnuncio = () => {
     const handleConfirmar = async (idCandidato) => {
         if (window.confirm("Tem certeza que deseja confirmar este candidato? O anúncio será encerrado.")) {
             try {
-                const res = await axios.post(`/api/anuncios/${idAnuncio}/confirmar`, { idCandidatoConfirmado: idCandidato });
+                const res = await api.post(`/api/anuncios/${idAnuncio}/confirmar`, { idCandidatoConfirmado: idCandidato });
                 setFeedback(res.data.msg);
                 fetchDados();
             } catch (err) {
