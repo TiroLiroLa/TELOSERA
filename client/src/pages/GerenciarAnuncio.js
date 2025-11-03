@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useHelp } from '../context/HelpContext';
 
 const GerenciarAnuncio = () => {
     const { id: idAnuncio } = useParams();
@@ -10,6 +11,18 @@ const GerenciarAnuncio = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [feedback, setFeedback] = useState('');
+    const { setHelpContent } = useHelp();
+
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Gerenciar Anúncio',
+            content: [
+                { item: 'Lista de Candidatos', description: 'Esta página mostra todos os usuários que se candidataram ao seu anúncio.' },
+                { item: 'Confirmar Serviço', description: 'Ao clicar em "Confirmar Serviço", você seleciona o candidato para o trabalho. Esta ação é final e encerrará o anúncio, impedindo novas candidaturas.' },
+                { item: 'Anúncio Encerrado', description: 'Uma vez que um candidato é confirmado, o status do anúncio muda para "Encerrado" e os botões de confirmação desaparecem.' },
+            ]
+        });
+    }, [setHelpContent]);
 
     const fetchDados = useCallback(async () => {
         try {

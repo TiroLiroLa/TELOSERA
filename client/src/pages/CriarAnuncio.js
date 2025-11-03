@@ -10,6 +10,8 @@ import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import './CriarAnuncio.css';
 import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const CriarAnuncio = () => {
     const navigate = useNavigate();
@@ -29,12 +31,42 @@ const CriarAnuncio = () => {
     const [previewImages, setPreviewImages] = useState([]);
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false); // <<< Novo estado de carregamento
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [location, setLocation] = useState(null);
     const [estados, setEstados] = useState([]);
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
+
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Criar Anúncio',
+            content: [
+                { item: 'Campos Obrigatórios', description: 'Todos os campos com um asterisco (*) vermelho são de preenchimento obrigatório.' },
+                { item: 'Tipo de Anúncio', description: 'Selecione "Vaga de Emprego" se você está contratando, ou "Oferta de Serviço" se você está oferecendo seu trabalho.' },
+                { item: 'Imagens', description: 'Você pode enviar até 5 imagens para ilustrar seu anúncio. Elas serão verificadas por nossa moderação de conteúdo.' },
+                { item: 'Localização', description: 'Clique em "Definir Localização" para abrir o modal. Nele, você deve definir a cidade e, opcionalmente, ajustar o pino no mapa para um local mais exato.' },
+                { item: 'Moderação de Conteúdo', description: 'Ao publicar, o texto e as imagens passarão por uma verificação automática de segurança. Anúncios com conteúdo impróprio serão bloqueados.' },
+            ]
+        });
+    }, [setHelpContent]);
+
+    // Ajuda para o Modal de Localização
+    useEffect(() => {
+        if (isModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Localização do Anúncio',
+                content: [
+                    { item: 'Cidade', description: 'Selecione o estado e a cidade onde o serviço será realizado ou de onde você está ofertando.' },
+                    { item: 'Ponto no Mapa', description: 'Opcionalmente, ajuste o pino no mapa para indicar um local mais preciso. Isso ajuda os candidatos a calcularem a distância.' },
+                ]
+            });
+        }
+        return () => {
+            if (isModalOpen) revertHelpContent();
+        };
+    }, [isModalOpen, setHelpContent, revertHelpContent]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -163,15 +195,15 @@ const CriarAnuncio = () => {
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelTitulo || 'Título'}</label>
-                    <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required />
+                    <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required title="Crie um título claro e objetivo para o seu anúncio." />
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelDescricao || 'Descrição'}</label>
-                    <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required />
+                    <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required title="Descreva em detalhes o serviço oferecido ou a vaga disponível. Inclua requisitos, diferenciais, etc." />
                 </div>
                 <div className="form-group">
                     <label className="required">Especialização</label>
-                    <select name="fk_Area_id_area" value={formData.fk_Area_id_area} onChange={onChange} required>
+                    <select name="fk_Area_id_area" value={formData.fk_Area_id_area} onChange={onChange} required title="Selecione a principal área de atuação relacionada a este anúncio.">
                         <option value="">-- Selecione uma especialização --</option>
                         {areas.map(area => (
                             <option key={area.id_area} value={area.id_area}>
@@ -182,7 +214,7 @@ const CriarAnuncio = () => {
                 </div>
                 <div className="form-group">
                     <label className="required">Serviço Principal</label>
-                    <select name="fk_id_servico" value={formData.fk_id_servico} onChange={onChange} required>
+                    <select name="fk_id_servico" value={formData.fk_id_servico} onChange={onChange} required title="Selecione o serviço mais específico deste anúncio.">
                         <option value="">-- Selecione um serviço --</option>
                         {servicos.map(servico => (
                             <option key={servico.id_servico} value={servico.id_servico}>
@@ -193,14 +225,14 @@ const CriarAnuncio = () => {
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelData || 'Data'}</label>
-                    <DatePicker selected={dataServico} onChange={(date) => setDataServico(date)} dateFormat="dd/MM/yyyy" minDate={new Date()} className="custom-datepicker-input" />
+                    <DatePicker selected={dataServico} onChange={(date) => setDataServico(date)} dateFormat="dd/MM/yyyy" minDate={new Date()} className="custom-datepicker-input" title="Informe a data de início do serviço ou a partir de quando você está disponível." />
                 </div>
 
                 {/* --- Upload de Imagens --- */}
                 <hr style={{ margin: "1rem 0" }} />
                 <h3>Imagens do Anúncio (até 5)</h3>
                 <div className="form-group">
-                    <input type="file" multiple accept="image/*" onChange={handleFileChange} />
+                    <input type="file" multiple accept="image/*" onChange={handleFileChange} title="Envie até 5 imagens que ilustrem seu serviço ou a vaga (fotos de trabalhos anteriores, do local, etc.)." />
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '1rem' }}>
                     {previewImages.map((url, index) => (
@@ -212,7 +244,7 @@ const CriarAnuncio = () => {
                 <hr style={{ margin: "1rem 0" }} />
                 <h3>{textosUI.labelLocal || 'Localização'}</h3>
                 {regiaoCity && <div className="summary-box">Cidade definida: <strong>{regiaoCity.nome}</strong></div>}
-                <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }}>
+                <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }} title="Defina a cidade onde o serviço será realizado.">
                     {regiaoCity ? 'Alterar Localização' : 'Definir Localização'}
                 </button>
 
@@ -221,21 +253,26 @@ const CriarAnuncio = () => {
                 </button>
             </form>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Definir Localização</h2>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Definir Localização">
+                <div className="modal-header-with-help">
+                    <h2>Definir Localização</h2>
+                    <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                        <img src={helpIcon} alt="Ajuda" />
+                    </button>
+                </div>
                 <RequiredNotice /> {/* <-- aviso inserido dentro do modal */}
                 <Tabs>
                     <Tab label="1. Cidade">
                         <div className="form-group">
                             <label>Estado</label>
-                            <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
+                            <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required title="Selecione o estado onde o serviço será realizado.">
                                 <option value="">-- Selecione --</option>
                                 {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                             </select>
                         </div>
                         <div className="form-group">
                             <label>Cidade Central da Região</label>
-                            <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={(cityName) => handleCreateCity(cityName, regiaoEstadoId)} selectedCity={regiaoCity} />
+                            <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={(cityName) => handleCreateCity(cityName, regiaoEstadoId)} selectedCity={regiaoCity} title="Digite o nome da cidade onde o serviço será realizado." />
                         </div>
                     </Tab>
                     <Tab label="2. Ponto no Mapa">

@@ -1,14 +1,26 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import './Login.css';
 import PasswordInput from '../components/PasswordInput';
+import { useHelp } from '../context/HelpContext';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', senha: '' });
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const { setHelpContent } = useHelp();
+
+  useEffect(() => {
+    setHelpContent({
+      title: 'Ajuda: Login',
+      content: [
+        { item: 'Acesso', description: 'Use o e-mail e a senha que você cadastrou. Se ainda não tem uma conta, clique em "Cadastre-se agora!".' },
+        { item: 'Conta não verificada', description: 'Se você acabou de se cadastrar, verifique seu e-mail e clique no link de ativação antes de tentar fazer login.' },
+      ]
+    });
+  }, [setHelpContent]);
 
   const { email, senha } = formData;
   const onChange = e => {
