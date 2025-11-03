@@ -294,19 +294,6 @@ const Cadastro = () => {
     };
 
     const handleTipoSelect = (tipo) => { setTipoUsuario(tipo); setEtapa(2); };
-    const handleCreateCity = async (cityName, estadoId) => {
-        if (!estadoId) {
-            alert("Por favor, selecione um estado primeiro.");
-            return null;
-        }
-        try {
-            const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: estadoId });
-            return res.data;
-        } catch (error) {
-            alert("Erro ao criar nova cidade.");
-            return null;
-        }
-    };
     const onLocationSelect = (latlng) => { setLocation(latlng); };
 
     const handleEspecialidadeChange = (idArea) => {
@@ -508,7 +495,7 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade</label>
-                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade. Se não existir, ela será criada." disabled={addressFieldsDisabled} />
+                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade." disabled={addressFieldsDisabled} />
                                     </div>
                                 </div>
                             </Tab>
@@ -525,7 +512,7 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade Central da Região</label>
-                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} title="Digite o nome da cidade central da sua região de atuação." />
+                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} selectedCity={regiaoCity} title="Digite o nome da cidade central da sua região de atuação." />
                                     </div>
 
                                     <div className="form-group">

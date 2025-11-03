@@ -2,11 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './CityAutocomplete.css';
 
-const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, title }) => {
+const CityAutocomplete = ({ estadoId, onCitySelect, selectedCity, title, disabled }) => {
     const [query, setQuery] = useState(selectedCity ? selectedCity.nome : '');
     const [suggestions, setSuggestions] = useState([]);
     const [isListOpen, setIsListOpen] = useState(false);
-    const [showCreateButton, setShowCreateButton] = useState(false);
 
     useEffect(() => {
         setQuery(selectedCity ? selectedCity.nome : '');
@@ -18,26 +17,19 @@ const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, 
         onCitySelect(city);
     };
 
-    const handleCreateCity = async () => {
-        const newCity = await onCityCreate(query);
-        if (newCity) {
-            handleCitySelect(newCity);
-        }
-    };
-
     const fetchSuggestions = useCallback(async () => {
         if (query.length < 2 || !estadoId || (selectedCity && query === selectedCity.nome)) {
             setSuggestions([]);
-            setShowCreateButton(false);
             return;
         }
         setIsListOpen(true);
-        const res = await axios.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
-        setSuggestions(res.data);
-
-        const exactMatch = res.data.find(c => c.nome.toLowerCase() === query.toLowerCase());
-        setShowCreateButton(!exactMatch);
-
+        try {
+            const res = await axios.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
+            setSuggestions(res.data);
+        } catch (error) {
+            console.error("Erro ao buscar sugestões de cidade:", error);
+            setSuggestions([]);
+        }
     }, [query, estadoId, selectedCity]);
 
     useEffect(() => {
@@ -59,28 +51,17 @@ const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, 
                 onFocus={() => setIsListOpen(true)}
                 onBlur={() => setTimeout(() => setIsListOpen(false), 200)}
                 placeholder="Digite o nome da cidade"
-                disabled={!estadoId}
+                disabled={!estadoId || disabled}
                 title={title}
             />
-            {isListOpen && (
-                <>
-                    {suggestions.length > 0 && (
-                        <ul className="suggestions-list">
-                            {suggestions.map(city => (
-                                <li key={city.id_cidade} onMouseDown={() => handleCitySelect(city)}>
-                                    {city.nome}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                    {query.length >= 2 && suggestions.length === 0 && showCreateButton && (
-                        <div className="suggestions-list">
-                            <button type="button" onMouseDown={handleCreateCity} className="create-city-btn">
-                                Criar nova cidade: "{query}"
-                            </button>
-                        </div>
-                    )}
-                </>
+            {isListOpen && suggestions.length > 0 && (
+                <ul className="suggestions-list">
+                    {suggestions.map(city => (
+                        <li key={city.id_cidade} onMouseDown={() => handleCitySelect(city)}>
+                            {city.nome}
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );

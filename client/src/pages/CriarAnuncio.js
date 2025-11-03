@@ -184,13 +184,6 @@ const CriarAnuncio = () => {
             });
         }
     };
-    const handleCreateCity = async (cityName, estadoId) => {
-        if (!estadoId) { alert("Selecione um estado."); return null; }
-        try {
-            const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: estadoId });
-            return res.data;
-        } catch (error) { alert("Erro ao criar cidade."); return null; }
-    };
     const onLocationSelect = (latlng) => { setLocation(latlng); };
 
     const isOfertaDeVaga = formData.tipo === 'O';
@@ -304,7 +297,7 @@ const CriarAnuncio = () => {
                         </div>
                         <div className="form-group">
                             <label>Cidade Central da Região</label>
-                            <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={(cityName) => handleCreateCity(cityName, regiaoEstadoId)} selectedCity={regiaoCity} title="Digite o nome da cidade onde o serviço será realizado." />
+                            <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} selectedCity={regiaoCity} title="Digite o nome da cidade onde o serviço será realizado." />
                         </div>
                     </Tab>
                     <Tab label="2. Ponto no Mapa">
