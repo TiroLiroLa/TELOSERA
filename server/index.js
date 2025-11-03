@@ -4,7 +4,22 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-app.use(cors());
+const whitelist = [
+  'http://localhost:3000', // Para você continuar testando no seu PC
+  'https://telosera-client.onrender.com' // A URL do seu client no Render
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.get('/', (req, res) => {

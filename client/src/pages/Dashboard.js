@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useContext, useCallback } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { Tabs, Tab } from '../components/Tabs';
 import AnuncioDashboardCard from '../components/AnuncioDashboardCard';
@@ -52,10 +52,10 @@ const Dashboard = () => {
         try {
             setLoading(true);
             const [resPublicados, resCandidaturas, resMeusConfirmados, resTrabalhosConfirmados] = await Promise.all([
-                axios.get('/api/anuncios/meus-publicados'),
-                axios.get('/api/anuncios/minhas-candidaturas'),
-                axios.get('/api/anuncios/meus-confirmados'),
-                axios.get('/api/anuncios/trabalhos-confirmados')
+                api.get('/api/anuncios/meus-publicados'),
+                api.get('/api/anuncios/minhas-candidaturas'),
+                api.get('/api/anuncios/meus-confirmados'),
+                api.get('/api/anuncios/trabalhos-confirmados')
             ]);
             setPublicados(resPublicados.data);
             setCandidaturas(resCandidaturas.data);

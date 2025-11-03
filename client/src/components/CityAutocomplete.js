@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './CityAutocomplete.css';
 
 const CityAutocomplete = ({ estadoId, onCitySelect, selectedCity, title, disabled }) => {
@@ -23,13 +23,15 @@ const CityAutocomplete = ({ estadoId, onCitySelect, selectedCity, title, disable
             return;
         }
         setIsListOpen(true);
+
         try {
-            const res = await axios.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
+            const res = await api.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
             setSuggestions(res.data);
         } catch (error) {
             console.error("Erro ao buscar sugestões de cidade:", error);
             setSuggestions([]);
         }
+      
     }, [query, estadoId, selectedCity]);
 
     useEffect(() => {

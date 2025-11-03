@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
@@ -72,9 +72,9 @@ const CriarAnuncio = () => {
         const fetchData = async () => {
             try {
                 const [resAreas, resServicos, resEstados] = await Promise.all([
-                    axios.get('/api/dados/areas'),
-                    axios.get('/api/dados/servicos'),
-                    axios.get('/api/dados/estados')
+                    api.get('/api/dados/areas'),
+                    api.get('/api/dados/servicos'),
+                    api.get('/api/dados/estados')
                 ]);
                 setAreas(resAreas.data);
                 setServicos(resServicos.data);
@@ -91,7 +91,7 @@ const CriarAnuncio = () => {
                 if (estado) {
                     try {
                         const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
-                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                        const res = await api.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
                             headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
                         });
                         if (res.data && res.data.length > 0) {
@@ -162,7 +162,7 @@ const CriarAnuncio = () => {
         data.append('jsonData', JSON.stringify(dadosFormulario));
 
         try {
-            await axios.post('/api/anuncios', data);
+            await api.post('/api/anuncios', data);
             alert('Anúncio criado com sucesso!');
             navigate('/dashboard');
         } catch (err) {
