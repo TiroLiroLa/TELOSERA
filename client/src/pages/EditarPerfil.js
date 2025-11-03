@@ -110,20 +110,6 @@ const EditarPerfil = () => {
         syncMapToCity();
     }, [selectedCity, selectedEstadoId, estados]);
 
-    const handleCreateCity = async (cityName) => {
-        if (!selectedEstadoId) {
-            alert("Por favor, selecione um estado primeiro.");
-            return null;
-        }
-        try {
-            const res = await api.post('/api/dados/cidades', { nome: cityName, fk_id_estado: selectedEstadoId });
-            return res.data;
-        } catch (error) {
-            alert("Erro ao criar nova cidade.");
-            return null;
-        }
-    };
-
     const handleAreaChange = (idArea) => {
         const newSelection = new Set(minhasAreas);
         if (newSelection.has(idArea)) {
@@ -319,7 +305,7 @@ const EditarPerfil = () => {
                 </div>
                 <form onSubmit={onRegiaoSubmit}>
                     <div className="form-group"><label>Estado</label><select value={selectedEstadoId} onChange={e => { setSelectedEstadoId(e.target.value); setSelectedCity(null); }} required><option value="">-- Selecione um Estado --</option>{estados.map(estado => (<option key={estado.id_estado} value={estado.id_estado}>{estado.nome} ({estado.uf})</option>))}</select></div>
-                    <div className="form-group"><label>Cidade</label><CityAutocomplete estadoId={selectedEstadoId} onCitySelect={setSelectedCity} onCityCreate={handleCreateCity} selectedCity={selectedCity} /></div>
+                    <div className="form-group"><label>Cidade</label><CityAutocomplete estadoId={selectedEstadoId} onCitySelect={setSelectedCity} selectedCity={selectedCity} /></div>
                     <div className="form-group"><label>Ponto Central (Ajuste Fino)</label><div style={{height: '250px'}}><LocationPicker onLocationSelect={onLocationSelect} initialPosition={newLocation} radiusKm={newRaio} /></div></div>
                     <div className="form-group"><label>Novo Raio de Atuação (em km):</label><input type="number" value={newRaio} onChange={(e) => setNewRaio(e.target.value)} placeholder="Ex: 50" required title="A distância máxima que você atende a partir do ponto central." /></div>
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Salvar Nova Região</button>

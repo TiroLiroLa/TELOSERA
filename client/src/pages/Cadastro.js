@@ -221,7 +221,7 @@ const Cadastro = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        const { nome, email, senha, confirmarSenha, identificador } = formData;
+        const { nome, email, senha, confirmarSenha, identificador, telefone } = formData;
 
         if (!nome.trim()) newErrors.nome = 'Nome / Razão Social é obrigatório.';
         if (!email.trim()) newErrors.email = 'E-mail é obrigatório.';
@@ -229,6 +229,8 @@ const Cadastro = () => {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) newErrors.email = 'Formato de e-mail inválido.';
         }
+
+        if (!telefone.trim()) newErrors.telefone = 'Telefone é obrigatório.';
 
         const isPasswordStrong = senha.length >= 6 && /(?=.*[A-Z])/.test(senha) && /(?=.*[0-9])/.test(senha);
         if (!isPasswordStrong) {
@@ -292,19 +294,6 @@ const Cadastro = () => {
     };
 
     const handleTipoSelect = (tipo) => { setTipoUsuario(tipo); setEtapa(2); };
-    const handleCreateCity = async (cityName, estadoId) => {
-        if (!estadoId) {
-            alert("Por favor, selecione um estado primeiro.");
-            return null;
-        }
-        try {
-            const res = await api.post('/api/dados/cidades', { nome: cityName, fk_id_estado: estadoId });
-            return res.data;
-        } catch (error) {
-            alert("Erro ao criar nova cidade.");
-            return null;
-        }
-    };
     const onLocationSelect = (latlng) => { setLocation(latlng); };
 
     const handleEspecialidadeChange = (idArea) => {
@@ -362,8 +351,9 @@ const Cadastro = () => {
                     {errors.email && <span className="field-error">{errors.email}</span>}
                 </div>
                 <div className="form-group">
-                    <label htmlFor="telefone">Telefone</label>
+                    <label htmlFor="telefone" className="required">Telefone</label>
                     <input type="tel" id="telefone" name="telefone" value={formData.telefone} onChange={onChange} title="Seu número de telefone ou WhatsApp para contato." />
+                    {errors.telefone && <span className="field-error">{errors.telefone}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="senha" className="required">Senha</label>
@@ -505,7 +495,7 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade</label>
-                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade. Se não existir, ela será criada." disabled={addressFieldsDisabled} />
+                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade." disabled={addressFieldsDisabled} />
                                     </div>
                                 </div>
                             </Tab>
@@ -522,7 +512,7 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade Central da Região</label>
-                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} title="Digite o nome da cidade central da sua região de atuação." />
+                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} selectedCity={regiaoCity} title="Digite o nome da cidade central da sua região de atuação." />
                                     </div>
 
                                     <div className="form-group">
