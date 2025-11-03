@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Link } from 'react-router-dom';
 import { cpf as cpfValidator, cnpj as cnpjValidator } from 'cpf-cnpj-validator';
 import './Cadastro.css';
@@ -105,8 +105,8 @@ const Cadastro = () => {
         const fetchData = async () => {
             try {
                 const [resEstados, resAreas] = await Promise.all([
-                    axios.get('/api/dados/estados'),
-                    axios.get('/api/dados/areas')
+                    api.get('/api/dados/estados'),
+                    api.get('/api/dados/areas')
                 ]);
                 setEstados(resEstados.data);
                 setTodasEspecialidades(resAreas.data);
@@ -125,8 +125,8 @@ const Cadastro = () => {
                     try {
                         // A lógica de geocoding agora é feita diretamente aqui
                         const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
-                        // Usamos o axios diretamente, não mais o hook
-                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                        // Usamos o api diretamente, não mais o hook
+                        const res = await api.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
                             headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
                         });
 
@@ -169,7 +169,7 @@ const Cadastro = () => {
 
         try {
             // Chama a API ViaCEP
-            const viaCepResponse = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
+            const viaCepResponse = await api.get(`https://viacep.com.br/ws/${cep}/json/`);
 
             if (viaCepResponse.data.erro) {
                 throw new Error('CEP não encontrado.');
@@ -182,7 +182,7 @@ const Cadastro = () => {
             }
 
             // Agora, busca os IDs da nossa própria API com os dados retornados
-            const ourApiResponse = await axios.get(`/api/dados/localizacao-por-nome?uf=${uf}&cidade=${localidade}`);
+            const ourApiResponse = await api.get(`/api/dados/localizacao-por-nome?uf=${uf}&cidade=${localidade}`);
             const { id_estado, id_cidade, nome_cidade } = ourApiResponse.data;
 
             // Preenche o formulário e os estados
@@ -274,7 +274,7 @@ const Cadastro = () => {
         };
 
         try {
-            const res = await axios.post('/api/users/register', dadosParaEnviar);
+            const res = await api.post('/api/users/register', dadosParaEnviar);
             setSuccessMessage(res.data.msg);
             setEtapa(3);
         } catch (err) {
@@ -298,7 +298,7 @@ const Cadastro = () => {
             return null;
         }
         try {
-            const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: estadoId });
+            const res = await api.post('/api/dados/cidades', { nome: cityName, fk_id_estado: estadoId });
             return res.data;
         } catch (error) {
             alert("Erro ao criar nova cidade.");

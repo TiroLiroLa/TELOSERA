@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const AnuncioForm = ({ onAnuncioCriado }) => {
   const [areas, setAreas] = useState([]);
@@ -18,8 +18,8 @@ const AnuncioForm = ({ onAnuncioCriado }) => {
     const fetchData = async () => {
       try {
         const [resAreas, resServicos] = await Promise.all([
-          axios.get('/api/dados/areas'),
-          axios.get('/api/dados/servicos')
+          api.get('/api/dados/areas'),
+          api.get('/api/dados/servicos')
         ]);
         setAreas(resAreas.data);
         setServicos(resServicos.data);
@@ -41,7 +41,7 @@ const AnuncioForm = ({ onAnuncioCriado }) => {
       return;
     }
     try {
-      const res = await axios.post('/api/anuncios', formData);
+      const res = await api.post('/api/anuncios', formData);
       alert('Anúncio criado com sucesso!');
       onAnuncioCriado(res.data);
       setFormData({ titulo: '', descricao: '', tipo: 'O', fk_Area_id_area: '', fk_id_servico: '' });

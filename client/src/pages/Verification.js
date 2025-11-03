@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 
 const Verification = () => {
     const { token } = useParams(); // Pega o token da URL
@@ -9,7 +9,7 @@ const Verification = () => {
     useEffect(() => {
         const verifyEmail = async () => {
             try {
-                await axios.get(`/api/users/verify/${token}`);
+                await api.get(`/api/users/verify/${token}`);
                 navigate('/verification-success');
             } catch (error) {
                 navigate('/verification-failure');

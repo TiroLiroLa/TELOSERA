@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from '../components/Modal';
 import LocationPicker from '../components/LocationPicker';
@@ -65,10 +65,10 @@ const EditarPerfil = () => {
             if (!user) return;
             try {
                 const [resTodasAreas, resMinhasAreas, resEstados, resMinhaRegiao] = await Promise.all([
-                    axios.get('/api/dados/areas'),
-                    axios.get('/api/users/me/areas'),
-                    axios.get('/api/dados/estados'),
-                    axios.get('/api/users/me/regiao').catch(err => null) // Não quebra se o usuário não tiver região
+                    api.get('/api/dados/areas'),
+                    api.get('/api/users/me/areas'),
+                    api.get('/api/dados/estados'),
+                    api.get('/api/users/me/regiao').catch(err => null) // Não quebra se o usuário não tiver região
                 ]);
                 setTodasAreas(resTodasAreas.data);
                 setMinhasAreas(new Set(resMinhasAreas.data.map(area => area.id_area)));
@@ -94,7 +94,7 @@ const EditarPerfil = () => {
                 if (estado) {
                     try {
                         const query = `city=${encodeURIComponent(selectedCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
-                        const res = await axios.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
+                        const res = await api.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
                             headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
                         });
                         if (res.data && res.data.length > 0) {
@@ -116,7 +116,7 @@ const EditarPerfil = () => {
             return null;
         }
         try {
-            const res = await axios.post('/api/dados/cidades', { nome: cityName, fk_id_estado: selectedEstadoId });
+            const res = await api.post('/api/dados/cidades', { nome: cityName, fk_id_estado: selectedEstadoId });
             return res.data;
         } catch (error) {
             alert("Erro ao criar nova cidade.");
@@ -140,7 +140,7 @@ const EditarPerfil = () => {
     const onDadosSubmit = async e => {
         e.preventDefault();
         try {
-            await axios.put('/api/users/me', dadosFormData);
+            await api.put('/api/users/me', dadosFormData);
             alert('Dados atualizados com sucesso!');
         } catch (err) {
             alert('Erro ao atualizar dados.');
@@ -151,7 +151,7 @@ const EditarPerfil = () => {
         e.preventDefault();
         try {
             const areasParaEnviar = { areas: Array.from(minhasAreas) };
-            await axios.put('/api/users/me/areas', areasParaEnviar);
+            await api.put('/api/users/me/areas', areasParaEnviar);
             alert('Áreas de atuação atualizadas com sucesso!');
         } catch (err) {
             alert('Erro ao atualizar áreas.');
@@ -176,7 +176,7 @@ const EditarPerfil = () => {
                 raio_atuacao: newRaio,
                 fk_id_cidade: selectedCity.id_cidade
             };
-            await axios.put('/api/users/me/regiao', dadosParaEnviar);
+            await api.put('/api/users/me/regiao', dadosParaEnviar);
             alert('Região de atuação atualizada com sucesso!');
             setIsModalOpen(false);
         } catch (err) {

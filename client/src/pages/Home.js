@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import AnuncioCard from '../components/AnuncioCard';
 import './Home.css';
 import { AuthContext } from '../context/AuthContext';
@@ -36,8 +36,8 @@ const Home = () => {
         try {
           // Busca em paralelo a região e as especialidades do usuário
           const [resRegiao, resAreas] = await Promise.all([
-            axios.get('/api/users/me/regiao').catch(() => null),
-            axios.get('/api/users/me/areas').catch(() => null)
+            api.get('/api/users/me/regiao').catch(() => null),
+            api.get('/api/users/me/areas').catch(() => null)
           ]);
 
           // 1. Adiciona filtro de localização
@@ -71,7 +71,7 @@ const Home = () => {
       try {
         // Busca os 8 anúncios mais relevantes (4 de cada tipo, idealmente)
         params.append('limit', '8');
-        const resAnuncios = await axios.get(`/api/anuncios?${params.toString()}`);
+        const resAnuncios = await api.get(`/api/anuncios?${params.toString()}`);
         setAnuncios(resAnuncios.data);
       } catch (err) {
         console.error("Erro ao buscar anúncios públicos:", err);

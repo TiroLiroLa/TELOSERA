@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import './CityAutocomplete.css';
 
 const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, title }) => {
@@ -32,7 +32,7 @@ const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, 
             return;
         }
         setIsListOpen(true);
-        const res = await axios.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
+        const res = await api.get(`/api/dados/cidades?q=${query}&estadoId=${estadoId}`);
         setSuggestions(res.data);
 
         const exactMatch = res.data.find(c => c.nome.toLowerCase() === query.toLowerCase());

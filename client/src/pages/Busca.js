@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import AnuncioCard from '../components/AnuncioCard';
 import './Busca.css';
 import Modal from '../components/Modal';
@@ -75,8 +75,8 @@ const Busca = () => {
         const fetchFilterData = async () => {
             try {
                 const [resAreas, resServicos] = await Promise.all([
-                    axios.get('/api/dados/areas'),
-                    axios.get('/api/dados/servicos')
+                    api.get('/api/dados/areas'),
+                    api.get('/api/dados/servicos')
                 ]);
                 setAreas(resAreas.data);
                 setServicos(resServicos.data);
@@ -97,7 +97,7 @@ const Busca = () => {
             }
 
             const params = new URLSearchParams(filtrosAtivos).toString();
-            const res = await axios.get(`/api/anuncios?${params}`);
+            const res = await api.get(`/api/anuncios?${params}`);
             setResultados(res.data);
         } catch (error) {
             console.error("Erro ao buscar resultados:", error);
@@ -124,7 +124,7 @@ const Busca = () => {
     const handleOpenMapModal = async () => {
         if (isAuthenticated && !tempLocation) {
             try {
-                const resRegiao = await axios.get('/api/users/me/regiao');
+                const resRegiao = await api.get('/api/users/me/regiao');
                 const { lat, lng, raio } = resRegiao.data;
 
                 setTempLocation({ lat, lng });
