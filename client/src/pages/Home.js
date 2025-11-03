@@ -3,15 +3,28 @@ import axios from 'axios';
 import AnuncioCard from '../components/AnuncioCard';
 import './Home.css';
 import { AuthContext } from '../context/AuthContext';
+import { useHelp } from '../context/HelpContext';
 
 const Home = () => {
   const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
   const [anuncios, setAnuncios] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { setHelpContent } = useHelp();
 
   // Estados para os títulos dinâmicos
   const [tituloOfertas, setTituloOfertas] = useState("Últimas ofertas de trabalho");
   const [tituloProfissionais, setTituloProfissionais] = useState("Últimos profissionais disponíveis");
+
+  useEffect(() => {
+    setHelpContent({
+      title: 'Ajuda: Página Inicial',
+      content: [
+        { item: 'Feed Principal', description: 'Esta é a sua página inicial. Aqui você vê os anúncios mais recentes, personalizados com base na sua localização e especialidades (se estiver logado).' },
+        { item: 'Busca', description: 'Use a barra de busca no topo para encontrar algo específico.' },
+        { item: 'Tipos de Anúncio', description: 'Existem "Ofertas de Trabalho" (empresas contratando) e "Profissionais Disponíveis" (prestadores oferecendo serviço).' },
+      ]
+    });
+  }, [setHelpContent]);
 
   useEffect(() => {
     const fetchAnuncios = async () => {

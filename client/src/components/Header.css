@@ -174,3 +174,24 @@
     font-weight: bold;
     font-size: 1.2rem;
 }
+
+.help-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.help-button:hover {
+    background-color: #f0f0f0;
+}
+
+.help-button img {
+    width: 24px;
+    height: 24px;
+}

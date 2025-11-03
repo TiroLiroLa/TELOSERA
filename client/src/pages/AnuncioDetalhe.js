@@ -9,6 +9,8 @@ import mapPinIcon from '../assets/map-pin.svg';
 import StarRating from '../components/StarRating';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams();
@@ -18,12 +20,41 @@ const AnuncioDetalhe = () => {
     const [loading, setLoading] = useState(true);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
 
     const [statusCandidatura, setStatusCandidatura] = useState({
         carregando: true,
         candidatado: false,
         mensagem: ''
     });
+
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Detalhes do Anúncio',
+            content: [
+                { item: 'Informações Gerais', description: 'Aqui você encontra todos os detalhes sobre o anúncio, como descrição, data, tipo e especialização.' },
+                { item: 'Galeria de Imagens', description: 'Clique em qualquer imagem para abri-la em tela cheia. Se houver mais de 3 imagens, um indicador "+N" aparecerá na última.' },
+                { item: 'Informações do Publicador', description: 'Na barra lateral, você vê quem publicou o anúncio, a avaliação média e o link para o perfil completo. Se estiver logado, os dados de contato (e-mail, telefone) ficam visíveis.' },
+                { item: 'Ação Principal', description: 'O botão principal permite que você se candidate à vaga. Se você for o dono do anúncio ou já tiver se candidatado, o botão estará desabilitado.' },
+                { item: 'Anúncio Encerrado', description: 'Se um anúncio estiver encerrado, apenas o dono e o candidato confirmado poderão visualizá-lo.' },
+            ]
+        });
+    }, [setHelpContent]);
+
+    // Ajuda para o Modal do Mapa
+    useEffect(() => {
+        if (isMapModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Localização do Serviço',
+                content: [
+                    { item: 'Ponto no Mapa', description: 'Este é o local aproximado onde o serviço será realizado, conforme definido pelo anunciante.' },
+                ]
+            });
+        }
+        return () => {
+            if (isMapModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+        };
+    }, [isMapModalOpen, setHelpContent, revertHelpContent]);
 
     useEffect(() => {
         const fetchDados = async () => {
@@ -258,8 +289,13 @@ const AnuncioDetalhe = () => {
             </div>
 
             {anuncio.localizacao && (
-                <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
-                    <h2>Localização do Serviço</h2>
+                <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)} title="Localização do Serviço">
+                    <div className="modal-header-with-help">
+                        <h2>Localização do Serviço</h2>
+                        <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                            <img src={helpIcon} alt="Ajuda" />
+                        </button>
+                    </div>
                     <MoveableMap location={anuncio.localizacao} raio={0.01} />
                 </Modal>
             )}

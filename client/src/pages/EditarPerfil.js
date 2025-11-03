@@ -7,6 +7,8 @@ import CityAutocomplete from '../components/CityAutocomplete';
 import { Link, useNavigate } from 'react-router-dom';
 import './EditarPerfil.css';
 import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const EditarPerfil = () => {
     const { user, loading: authLoading } = useContext(AuthContext);
@@ -22,7 +24,36 @@ const EditarPerfil = () => {
     const [estados, setEstados] = useState([]);
     const [selectedEstadoId, setSelectedEstadoId] = useState('');
     const [selectedCity, setSelectedCity] = useState(null);
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
 
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Editar Perfil',
+            content: [
+                { item: 'Navegação', description: 'Use o menu à esquerda para alternar entre a edição de "Dados Básicos", "Especialidades" e "Região de Atuação".' },
+                { item: 'Dados Básicos', description: 'Atualize seu nome/razão social e telefone. O nome é obrigatório.' },
+                { item: 'Especialidades', description: 'Selecione ou desmarque as áreas em que você atua. Use a busca para encontrar especialidades rapidamente.' },
+                { item: 'Região de Atuação', description: 'Clique em "Abrir Editor de Região" para definir sua cidade principal, um ponto exato no mapa e o raio em quilômetros que você atende.' },
+            ]
+        });
+    }, [setHelpContent]);
+
+    // Ajuda para o Modal de Região
+    useEffect(() => {
+        if (isModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Editor de Região',
+                content: [
+                    { item: 'Cidade', description: 'Selecione sua cidade principal de atuação.' },
+                    { item: 'Ponto Central', description: 'Ajuste o pino no mapa para o ponto exato de onde seu raio de atuação deve começar (ex: seu escritório).' },
+                    { item: 'Raio de Atuação', description: 'Defina em quilômetros a distância que você está disposto a viajar para realizar um serviço.' },
+                ]
+            });
+        }
+        return () => {
+            if (isModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+        };
+    }, [isModalOpen, setHelpContent, revertHelpContent]);
 
     useEffect(() => {
 
@@ -194,8 +225,8 @@ const EditarPerfil = () => {
                     <section className="edit-section">
                         <h2>Dados Básicos</h2>
                         <form onSubmit={onDadosSubmit}>
-                            <div className="form-group"><label className="required">Nome / Razão Social</label><input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({ ...dadosFormData, nome: e.target.value })} /></div>
-                            <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" value={dadosFormData.telefone} onChange={e => setDadosFormData({ ...dadosFormData, telefone: e.target.value })} /></div>
+                            <div className="form-group"><label className="required">Nome / Razão Social</label><input type="text" name="nome" value={dadosFormData.nome} onChange={e => setDadosFormData({ ...dadosFormData, nome: e.target.value })} title="Seu nome de exibição público na plataforma." /></div>
+                            <div className="form-group"><label>Telefone</label><input type="tel" name="telefone" value={dadosFormData.telefone} onChange={e => setDadosFormData({ ...dadosFormData, telefone: e.target.value })} title="Seu telefone de contato, que será visível para outros usuários logados nos seus anúncios." /></div>
                             <button type="submit" className="btn btn-primary">Salvar Alterações</button>
                         </form>
                     </section>
@@ -209,6 +240,7 @@ const EditarPerfil = () => {
                                 <input
                                     type="text"
                                     placeholder="Buscar especialidades..."
+                                    title="Digite para filtrar a lista de especialidades abaixo."
                                     onChange={(e) => {
                                         const searchBox = e.target;
                                         const filter = searchBox.value.toLowerCase();
@@ -278,13 +310,18 @@ const EditarPerfil = () => {
                 )}
             </main>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Selecione sua nova região de atuação</h2>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Editor de Região">
+                <div className="modal-header-with-help">
+                    <h2>Selecione sua nova região de atuação</h2>
+                    <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                        <img src={helpIcon} alt="Ajuda" />
+                    </button>
+                </div>
                 <form onSubmit={onRegiaoSubmit}>
                     <div className="form-group"><label>Estado</label><select value={selectedEstadoId} onChange={e => { setSelectedEstadoId(e.target.value); setSelectedCity(null); }} required><option value="">-- Selecione um Estado --</option>{estados.map(estado => (<option key={estado.id_estado} value={estado.id_estado}>{estado.nome} ({estado.uf})</option>))}</select></div>
                     <div className="form-group"><label>Cidade</label><CityAutocomplete estadoId={selectedEstadoId} onCitySelect={setSelectedCity} onCityCreate={handleCreateCity} selectedCity={selectedCity} /></div>
                     <div className="form-group"><label>Ponto Central (Ajuste Fino)</label><div style={{height: '250px'}}><LocationPicker onLocationSelect={onLocationSelect} initialPosition={newLocation} radiusKm={newRaio} /></div></div>
-                    <div className="form-group"><label>Novo Raio de Atuação (em km):</label><input type="number" value={newRaio} onChange={(e) => setNewRaio(e.target.value)} placeholder="Ex: 50" required /></div>
+                    <div className="form-group"><label>Novo Raio de Atuação (em km):</label><input type="number" value={newRaio} onChange={(e) => setNewRaio(e.target.value)} placeholder="Ex: 50" required title="A distância máxima que você atende a partir do ponto central." /></div>
                     <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Salvar Nova Região</button>
                 </form>
             </Modal>

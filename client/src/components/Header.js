@@ -3,11 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import './Header.css';
 import searchIcon from '../assets/icon.png';
+import helpIcon from '../assets/help-circle.svg'; // Importe o ícone
+import { useHelp } from '../context/HelpContext'; // Importe o hook de ajuda
 
 
 const Header = () => {
     const { isAuthenticated, user } = useContext(AuthContext);
     const navigate = useNavigate();
+    const { openHelp } = useHelp(); // Obtenha a função para abrir o modal
     const [searchTerm, setSearchTerm] = useState('');
     const [searchType, setSearchType] = useState('');
 
@@ -78,6 +81,11 @@ const Header = () => {
                             <Link to="/cadastro" className="nav-button">Cadastre-se</Link>
                         </>
                     )}
+                    {/* Botão de Ajuda */}
+                    <button onClick={openHelp} className="help-button" title="Ajuda (F1)">
+                        <img src={helpIcon} alt="Ajuda" />
+                    </button>
+
                 </nav>
             </div>
         </header>

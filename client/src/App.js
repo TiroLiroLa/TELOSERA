@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
-import { AuthProvider, AuthContext } from './context/AuthContext';
+import { AuthProvider, AuthContext } from './context/AuthContext'; // Ajuste na importação se necessário
 import Cadastro from './pages/Cadastro';
 import Login from './pages/Login';
 import './App.css';
@@ -19,8 +19,12 @@ import Busca from './pages/Busca';
 import VerificationSuccess from './pages/VerificationSuccess';
 import VerificationFailure from './pages/VerificationFailure';
 import Verification from './pages/Verification';
+import { HelpProvider, useHelp } from './context/HelpContext';
+import HelpModal from './components/HelpModal';
 
 const AppContent = () => {
+    // O useHelp só pode ser chamado dentro de um componente que é filho do Provider
+    const { setHelpContent } = useHelp(); 
     const { isAuthenticated, loading } = useContext(AuthContext);
 
     if (loading) {
@@ -28,39 +32,63 @@ const AppContent = () => {
     }
 
     return (
-
-
-
-        <Router>
-            <div className="App">
-                <Header />
-                <main>
-                    <Routes>
-                        <Route path="/" element={<Home />} />
-                        <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
-                        <Route path="/anuncios/criar" element={isAuthenticated ? <CriarAnuncio /> : <Navigate to="/login" />} />
-                        <Route path="/anuncios/gerenciar/:id" element={isAuthenticated ? <GerenciarAnuncio /> : <Navigate to="/login" />} />
-                        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
-                        <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
-                        <Route path="/busca" element={<Busca />} />
-                        <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
-                        <Route path="/perfil/:id" element={<Perfil />} />
-                        <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
-                        <Route path="/verify/:token" element={<Verification />} />
-                        <Route path="/verification-success" element={<VerificationSuccess />} />
-                        <Route path="/verification-failure" element={<VerificationFailure />} />
-                        <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
-                </main>
-            </div>
-        </Router>
+        <>
+            <Header />
+            <main>
+                <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/anuncio/:id" element={<AnuncioDetalhe />} />
+                    <Route path="/anuncios/criar" element={isAuthenticated ? <CriarAnuncio /> : <Navigate to="/login" />} />
+                    <Route path="/anuncios/gerenciar/:id" element={isAuthenticated ? <GerenciarAnuncio /> : <Navigate to="/login" />} />
+                    <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/dashboard" />} />
+                    <Route path="/cadastro" element={!isAuthenticated ? <Cadastro /> : <Navigate to="/dashboard" />} />
+                    <Route path="/busca" element={<Busca />} />
+                    <Route path="/dashboard" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
+                    <Route path="/perfil/:id" element={<Perfil />} />
+                    <Route path="/perfil/editar" element={isAuthenticated ? <EditarPerfil /> : <Navigate to="/login" />} />
+                    <Route path="/verify/:token" element={<Verification />} />
+                    <Route path="/verification-success" element={<VerificationSuccess />} />
+                    <Route path="/verification-failure" element={<VerificationFailure />} />
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+            </main>
+        </>
     );
 };
+
+const AppWithProviders = () => {
+    const { openHelp } = useHelp();
+
+    useEffect(() => {
+        const handleKeyDown = (event) => {
+            if (event.key === 'F1') {
+                event.preventDefault();
+                openHelp();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [openHelp]);
+
+    return (
+        <>
+            <AppContent />
+            <HelpModal />
+        </>
+    );
+}
 
 function App() {
     return (
         <AuthProvider>
-            <AppContent />
+            <Router>
+                <HelpProvider>
+                    <AppWithProviders />
+                </HelpProvider>
+            </Router>
         </AuthProvider>
     );
 }

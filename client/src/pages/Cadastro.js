@@ -10,6 +10,8 @@ import { Tabs, Tab } from '../components/Tabs';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const Cadastro = () => {
     const [etapa, setEtapa] = useState(1);
@@ -40,6 +42,60 @@ const Cadastro = () => {
     const [todasEspecialidades, setTodasEspecialidades] = useState([]);
     const [minhasEspecialidades, setMinhasEspecialidades] = useState(new Set());
     const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false); // <--- nova linha
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
+
+    // Variáveis para controlar a altura máxima do conteúdo dos modais (mantido)
+    const especialidadesModalMaxHeight = '50vh';
+    const enderecoModalMaxHeight = '60vh';
+
+
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Cadastro',
+            content: [
+                { item: 'Tipo de Conta', description: 'Escolha "Prestador de Serviço" se você é autônomo ou profissional, ou "Empresa" se representa uma companhia que contrata.' },
+                { item: 'Senha Segura', description: 'Sua senha deve ter no mínimo 6 caracteres, uma letra maiúscula e um número para garantir sua segurança.' },
+                { item: 'Especialidades', description: 'Clique para abrir um modal e selecionar as áreas em que você atua. Prestadores de serviço devem selecionar ao menos uma.' },
+                { item: 'Endereço e Região', description: 'No modal de localização, defina seu endereço principal na primeira aba e sua região de atuação (cidade central e raio) na segunda.' },
+                { item: 'Verificação de E-mail', description: 'Após o cadastro, um e-mail de verificação será enviado. Você precisa clicar no link para ativar sua conta.' },
+            ]
+        });
+    }, [setHelpContent]);
+
+    // Ajuda para o Modal de Endereço/Região
+    useEffect(() => {
+        if (isModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Endereço e Região',
+                content: [
+                    { item: 'Aba "Endereço"', description: 'Preencha os dados do seu endereço principal. Esta informação pode ser usada para faturamento e contato.' },
+                    { item: 'Aba "Região de Atuação"', description: 'Defina a cidade central onde você trabalha e o raio em quilômetros que você atende a partir dela. Isso é crucial para que os clientes encontrem você nas buscas por localização.' },
+                    { item: 'Mapa', description: 'O mapa é sincronizado com a cidade selecionada. Você pode arrastar o pino para um ponto mais específico se desejar.' },
+                ]
+            });
+        }
+        // Cleanup: reverte para a ajuda da página quando o modal fecha
+        return () => {
+            if (isModalOpen) revertHelpContent();
+        };
+    }, [isModalOpen, setHelpContent, revertHelpContent]);
+
+    // Ajuda para o Modal de Especialidades
+    useEffect(() => {
+        if (isEspecialidadesModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Seleção de Especialidades',
+                content: [
+                    { item: 'Seleção', description: 'Marque todas as áreas em que você tem experiência ou que sua empresa atua. Prestadores de serviço devem selecionar pelo menos uma.' },
+                    { item: 'Busca', description: 'Use o campo de busca no topo para filtrar a lista e encontrar especialidades rapidamente.' },
+                ]
+            });
+        }
+        // Cleanup: reverte para a ajuda da página quando o modal fecha
+        return () => {
+            if (isEspecialidadesModalOpen) revertHelpContent();
+        };
+    }, [isEspecialidadesModalOpen, setHelpContent, revertHelpContent]);
 
 
     useEffect(() => {
@@ -226,22 +282,22 @@ const Cadastro = () => {
 
                 <div className="form-group">
                     <label htmlFor="nome" className="required">Nome Completo / Razão Social</label>
-                    <input type="text" id="nome" name="nome" value={formData.nome} onChange={onChange} />
+                    <input type="text" id="nome" name="nome" value={formData.nome} onChange={onChange} title="Informe seu nome completo (pessoa física) ou a razão social (empresa)." />
                     {errors.nome && <span className="field-error">{errors.nome}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="identificador" className="required">{idLabel}</label>
-                    <input type="text" id="identificador" name="identificador" value={formData.identificador} onChange={onChange} placeholder={idPlaceholder} />
+                    <input type="text" id="identificador" name="identificador" value={formData.identificador} onChange={onChange} placeholder={idPlaceholder} title={`Digite seu ${idLabel} sem pontos, traços ou barras.`} />
                     {errors.identificador && <span className="field-error">{errors.identificador}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="email" className="required">E-mail</label>
-                    <input type="email" id="email" name="email" value={formData.email} onChange={onChange} />
+                    <input type="email" id="email" name="email" value={formData.email} onChange={onChange} title="Seu melhor e-mail para contato e login na plataforma." />
                     {errors.email && <span className="field-error">{errors.email}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="telefone">Telefone</label>
-                    <input type="tel" id="telefone" name="telefone" value={formData.telefone} onChange={onChange} />
+                    <input type="tel" id="telefone" name="telefone" value={formData.telefone} onChange={onChange} title="Seu número de telefone ou WhatsApp para contato." />
                 </div>
                 <div className="form-group">
                     <label htmlFor="senha" className="required">Senha</label>
@@ -250,6 +306,7 @@ const Cadastro = () => {
                         name="senha"
                         value={formData.senha}
                         onChange={onChange}
+                        title="Sua senha deve ter no mínimo 6 caracteres, uma letra maiúscula e um número."
                         required
                     />
                     <PasswordStrengthMeter password={formData.senha} />
@@ -262,6 +319,7 @@ const Cadastro = () => {
                         name="confirmarSenha"
                         value={formData.confirmarSenha}
                         onChange={onChange}
+                        title="Repita a senha criada anteriormente para confirmação."
                         required
                     />
                     {errors.confirmarSenha && <span className="field-error">{errors.confirmarSenha}</span>}
@@ -281,6 +339,7 @@ const Cadastro = () => {
                     type="button" 
                     onClick={() => setIsEspecialidadesModalOpen(true)} 
                     style={{ marginBottom: '1.5rem' }}
+                    title="Clique para abrir a lista de todas as especialidades disponíveis para seleção."
                 >
                     {minhasEspecialidades.size > 0 ? 'Alterar Especialidades' : 'Selecionar Especialidades'}
                 </button>
@@ -295,7 +354,7 @@ const Cadastro = () => {
                     <p>Clique no botão abaixo para definir seu endereço e área de atuação.</p>
                 )}
                 {errors.localizacao && <span className="field-error" style={{ display: 'block', marginBottom: '1rem' }}>{errors.localizacao}</span>}
-                <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }}>
+                <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }} title="Clique para definir seu endereço e a região onde você presta serviços.">
                     {localizacaoDefinida ? 'Alterar Endereço e Região' : 'Definir Endereço e Região'}
                 </button>
 
@@ -319,12 +378,17 @@ const Cadastro = () => {
                 {etapa === 1 && renderEtapa1()}
                 {etapa === 2 && renderEtapa2()}
                 {etapa === 3 && renderEtapa3()}
-                <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                    <h2>Endereço e Região de Atuação</h2>
+                <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Endereço e Região de Atuação">
+                    <div className="modal-header-with-help">
+                        <h2>Endereço e Região de Atuação</h2>
+                        <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                            <img src={helpIcon} alt="Ajuda" />
+                        </button>
+                    </div>
                     <RequiredNotice />
                     
                     <div style={{ 
-                        maxHeight: '500px', // Aumentado para acomodar as duas abas
+                        maxHeight: enderecoModalMaxHeight,
                         overflowY: 'auto',
                         padding: '1rem',
                         border: '1px solid #ddd',
@@ -336,30 +400,30 @@ const Cadastro = () => {
                                     <p>Primeiro, preencha seu endereço principal.</p>
                                     <div className="form-group">
                                         <label className="required">CEP</label>
-                                        <input type="text" name="cep" value={formData.cep} onChange={onChange} />
+                                        <input type="text" name="cep" value={formData.cep} onChange={onChange} title="Digite o CEP para buscar o endereço." />
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Logradouro</label>
-                                        <input type="text" name="rua" value={formData.rua} onChange={onChange} />
+                                        <input type="text" name="rua" value={formData.rua} onChange={onChange} title="Nome da sua rua ou avenida." />
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Número</label>
-                                        <input type="text" name="numero" value={formData.numero} onChange={onChange} />
+                                        <input type="text" name="numero" value={formData.numero} onChange={onChange} title="Número do seu imóvel." />
                                     </div>
                                     <div className="form-group">
                                         <label>Complemento</label>
-                                        <input type="text" name="complemento" value={formData.complemento} onChange={onChange} />
+                                        <input type="text" name="complemento" value={formData.complemento} onChange={onChange} title="Ex: Apartamento 101, Bloco B, etc." />
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Estado</label>
-                                        <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required>
+                                        <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required title="Selecione o estado do seu endereço.">
                                             <option value="">-- Selecione --</option>
                                             {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                         </select>
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade</label>
-                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} />
+                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade. Se não existir, ela será criada." />
                                     </div>
                                 </div>
                             </Tab>
@@ -369,14 +433,14 @@ const Cadastro = () => {
                                     
                                     <div className="form-group">
                                         <label className="required">Estado da Região</label>
-                                        <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
+                                        <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required title="Selecione o estado onde você atua.">
                                             <option value="">-- Selecione --</option>
                                             {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                         </select>
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade Central da Região</label>
-                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} />
+                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} title="Digite o nome da cidade central da sua região de atuação." />
                                     </div>
 
                                     <div className="form-group">
@@ -388,7 +452,7 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Raio de Atuação (km)</label>
-                                        <input type="number" name="raio_atuacao" value={formData.raio_atuacao} onChange={onChange} />
+                                        <input type="number" name="raio_atuacao" value={formData.raio_atuacao} onChange={onChange} title="Distância máxima em quilômetros que você atende a partir do seu ponto central." />
                                     </div>
                                 </div>
                             </Tab>
@@ -416,14 +480,20 @@ const Cadastro = () => {
                     </div>
                 </Modal>
 
-                <Modal isOpen={isEspecialidadesModalOpen} onClose={() => setIsEspecialidadesModalOpen(false)}>
-                    <h2>Selecionar Especialidades</h2>
+                <Modal isOpen={isEspecialidadesModalOpen} onClose={() => setIsEspecialidadesModalOpen(false)} title="Selecionar Especialidades">
+                    <div className="modal-header-with-help">
+                        <h2>Selecionar Especialidades</h2>
+                        <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                            <img src={helpIcon} alt="Ajuda" />
+                        </button>
+                    </div>
                     <RequiredNotice />
                     
                     <div className="search-box" style={{ marginBottom: '1rem' }}>
                         <input
                             type="text"
                             placeholder="Buscar especialidades..."
+                            title="Digite para filtrar a lista de especialidades abaixo."
                             onChange={(e) => {
                                 const searchBox = e.target;
                                 const filter = searchBox.value.toLowerCase();
@@ -445,7 +515,7 @@ const Cadastro = () => {
                     </div>
 
                     <div className="especialidades-modal" style={{ 
-                        maxHeight: '400px', 
+                        maxHeight: especialidadesModalMaxHeight, 
                         overflowY: 'auto',
                         padding: '1rem',
                         border: '1px solid #ddd',

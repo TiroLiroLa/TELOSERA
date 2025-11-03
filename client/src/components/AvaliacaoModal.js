@@ -3,11 +3,14 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import Modal from './Modal';
 import RequiredNotice from './RequiredNotice'; // <--- adicionado
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
     const { user } = useContext(AuthContext);
     const [formData, setFormData] = useState({ comentario: '', nota1: 3, nota2: 3 });
     const [error, setError] = useState('');
+    const { openHelp } = useHelp();
 
     if (!isOpen || !avaliacaoTarget) return null;
 
@@ -37,21 +40,26 @@ const AvaliacaoModal = ({ isOpen, onClose, avaliacaoTarget, onSuccess }) => {
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose}>
-            <h2>{textosUI.titulo}</h2>
+        <Modal isOpen={isOpen} onClose={onClose} title={textosUI.titulo}>
+            <div className="modal-header-with-help">
+                <h2>{textosUI.titulo}</h2>
+                <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                    <img src={helpIcon} alt="Ajuda" />
+                </button>
+            </div>
             <RequiredNotice /> {/* <-- aviso inserido */}
             <form onSubmit={handleSubmit}>
                 <div className="form-group">
                     <label className="required">{textosUI.labelNota1} (1 a 5)</label>
-                    <input type="number" min="1" max="5" value={formData.nota1} onChange={e => setFormData({ ...formData, nota1: e.target.value })} />
+                    <input type="number" min="1" max="5" value={formData.nota1} onChange={e => setFormData({ ...formData, nota1: e.target.value })} title="Dê uma nota de 1 (ruim) a 5 (excelente)." />
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelNota2} (1 a 5)</label>
-                    <input type="number" min="1" max="5" value={formData.nota2} onChange={e => setFormData({ ...formData, nota2: e.target.value })} />
+                    <input type="number" min="1" max="5" value={formData.nota2} onChange={e => setFormData({ ...formData, nota2: e.target.value })} title="Dê uma nota de 1 (ruim) a 5 (excelente)." />
                 </div>
                 <div className="form-group">
                     <label>Comentário</label>
-                    <textarea rows="4" value={formData.comentario} onChange={e => setFormData({ ...formData, comentario: e.target.value })} />
+                    <textarea rows="4" value={formData.comentario} onChange={e => setFormData({ ...formData, comentario: e.target.value })} title="Descreva sua experiência. Este comentário será público." />
                 </div>
                 {error && <p className="error-message">{error}</p>}
                 <button type="submit" className="btn btn-primary">Enviar Avaliação</button>

@@ -1,0 +1,17 @@
+.help-modal-content ul,
+.help-modal-content ol {
+    padding-left: 20px;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.help-modal-content li {
+    margin-bottom: 0.75rem;
+}
+
+.help-modal-content p {
+    line-height: 1.6;
+}
+.help-modal-content strong {
+    color: #333;
+}

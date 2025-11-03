@@ -6,12 +6,27 @@ import './Busca.css';
 import Modal from '../components/Modal';
 import LocationPicker from '../components/LocationPicker';
 import { AuthContext } from '../context/AuthContext';
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const Busca = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [resultados, setResultados] = useState([]);
     const [loading, setLoading] = useState(true);
     const { isAuthenticated, loading: authLoading } = useContext(AuthContext);
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
+
+    useEffect(() => {
+        setHelpContent({
+            title: 'Ajuda: Busca de Anúncios',
+            content: [
+                { item: 'Filtros', description: 'Use os filtros à esquerda para refinar sua busca por palavra-chave, tipo de anúncio, especialização e serviço.' },
+                { item: 'Localização', description: 'Clique em "Buscar Perto de Mim" para encontrar anúncios baseados na sua localização. Se já estiver logado com uma região definida, ela será usada como padrão.' },
+                { item: 'Ordenação', description: 'No canto superior direito, você pode ordenar os resultados por relevância (mais recentes), melhores avaliações ou menor distância (se a busca por localização estiver ativa).' },
+            ]
+        });
+    }, [setHelpContent]);
+
     const getFiltrosFromURL = useCallback(() => {
         return {
             q: searchParams.get('q') || '',
@@ -33,6 +48,23 @@ const Busca = () => {
     const [tempLocation, setTempLocation] = useState(null);
     const [tempRaio, setTempRaio] = useState(filtros.raio || '20');
     const isGeoSearch = filtros.lat && filtros.lng;
+
+    // Ajuda para o Modal de Busca por Proximidade
+    useEffect(() => {
+        if (isMapModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Busca por Proximidade',
+                content: [
+                    { item: 'Ponto no Mapa', description: 'Clique no mapa para definir um ponto central para sua busca. Se você estiver logado, sua região padrão será carregada.' },
+                    { item: 'Raio da Busca', description: 'Defina a distância máxima (em km) a partir do ponto central que você deseja incluir nos resultados.' },
+                    { item: 'Aplicar Filtro', description: 'Clique para confirmar e refazer a busca com os novos parâmetros de localização.' },
+                ]
+            });
+        }
+        return () => {
+            if (isMapModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+        };
+    }, [isMapModalOpen, setHelpContent, revertHelpContent]);
 
     useEffect(() => {
         setFiltros(getFiltrosFromURL());
@@ -145,11 +177,11 @@ const Busca = () => {
                     <h2>Filtros</h2>
                     <div className="form-group">
                         <label>Palavra-chave</label>
-                        <input type="text" name="q" value={filtros.q} onChange={handleFiltroChange} />
+                        <input type="text" name="q" value={filtros.q} onChange={handleFiltroChange} title="Busque por termos no título ou na descrição do anúncio." />
                     </div>
                     <div className="form-group">
                         <label>Tipo de Anúncio</label>
-                        <select name="tipo" value={filtros.tipo} onChange={handleFiltroChange}>
+                        <select name="tipo" value={filtros.tipo} onChange={handleFiltroChange} title="Filtre por vagas de emprego ou por prestadores de serviço.">
                             <option value="">Todos</option>
                             <option value="O">Vagas (Empresas)</option>
                             <option value="S">Serviços (Prestadores)</option>
@@ -157,14 +189,14 @@ const Busca = () => {
                     </div>
                     <div className="form-group">
                         <label>Especialização</label>
-                        <select name="area" value={filtros.area} onChange={handleFiltroChange}>
+                        <select name="area" value={filtros.area} onChange={handleFiltroChange} title="Selecione a área de atuação principal do anúncio.">
                             <option value="">Todas</option>
                             {areas.map(a => <option key={a.id_area} value={a.id_area}>{a.nome}</option>)}
                         </select>
                     </div>
                     <div className="form-group">
                         <label>Serviço Principal</label>
-                        <select name="servico" value={filtros.servico} onChange={handleFiltroChange}>
+                        <select name="servico" value={filtros.servico} onChange={handleFiltroChange} title="Filtre pelo serviço específico que você procura.">
                             <option value="">Todos</option>
                             {servicos.map(s => <option key={s.id_servico} value={s.id_servico}>{s.nome}</option>)}
                         </select>
@@ -177,7 +209,7 @@ const Busca = () => {
                                 <button onClick={handleClearGeoFilter} className="clear-btn">Limpar</button>
                             </div>
                         ) : (
-                            <button type="button" onClick={handleOpenMapModal}>
+                            <button type="button" onClick={handleOpenMapModal} title="Encontre anúncios próximos a você ou a um local específico.">
                                 Buscar Perto de Mim
                             </button>
                         )}
@@ -188,7 +220,7 @@ const Busca = () => {
                         <h2>Resultados da Busca ({resultados.length})</h2>
                         <div className="form-group">
                             <label style={{ marginRight: '10px' }}>Ordenar por:</label>
-                            <select name="sortBy" value={filtros.sortBy || 'relevance'} onChange={handleFiltroChange}>
+                            <select name="sortBy" value={filtros.sortBy || 'relevance'} onChange={handleFiltroChange} title="Organize os resultados por data, avaliação ou distância.">
                                 <option value="relevance">Mais Recentes</option>
                                 <option value="rating">Melhores Avaliações</option>
                                 {isGeoSearch && <option value="distance">Menor Distância</option>}
@@ -208,8 +240,13 @@ const Busca = () => {
                     )}
                 </main>
             </div>
-            <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
-                <h2>Buscar por Proximidade</h2>
+            <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)} title="Buscar por Proximidade">
+                <div className="modal-header-with-help">
+                    <h2>Buscar por Proximidade</h2>
+                    <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                        <img src={helpIcon} alt="Ajuda" />
+                    </button>
+                </div>
                 <p>Use sua localização padrão ou selecione um novo ponto no mapa.</p>
                 <div style={{ height: '300px', marginBottom: '1rem' }}>
                     <LocationPicker
@@ -225,6 +262,7 @@ const Busca = () => {
                         value={tempRaio}
                         onChange={(e) => setTempRaio(e.target.value)}
                         placeholder="Ex: 20"
+                        title="Defina a distância máxima em quilômetros para a busca a partir do ponto central."
                     />
                 </div>
                 <button type="button" className="btn btn-primary" onClick={handleApplyGeoFilter}>
