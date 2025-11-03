@@ -41,6 +41,10 @@ const Cadastro = () => {
     const [minhasEspecialidades, setMinhasEspecialidades] = useState(new Set());
     const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false); // <--- nova linha
 
+    // Variáveis para controlar a altura máxima do conteúdo dos modais
+    const especialidadesModalMaxHeight = '50vh';
+    const enderecoModalMaxHeight = '60vh';
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -324,7 +328,7 @@ const Cadastro = () => {
                     <RequiredNotice />
                     
                     <div style={{ 
-                        maxHeight: '500px', // Aumentado para acomodar as duas abas
+                        maxHeight: enderecoModalMaxHeight,
                         overflowY: 'auto',
                         padding: '1rem',
                         border: '1px solid #ddd',
@@ -445,7 +449,7 @@ const Cadastro = () => {
                     </div>
 
                     <div className="especialidades-modal" style={{ 
-                        maxHeight: '400px', 
+                        maxHeight: especialidadesModalMaxHeight, 
                         overflowY: 'auto',
                         padding: '1rem',
                         border: '1px solid #ddd',
