@@ -39,6 +39,9 @@ const Cadastro = () => {
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+    const [isCepLoading, setIsCepLoading] = useState(false);
+    const [cepError, setCepError] = useState('');
+    const [addressFieldsDisabled, setAddressFieldsDisabled] = useState(false);
     const [todasEspecialidades, setTodasEspecialidades] = useState([]);
     const [minhasEspecialidades, setMinhasEspecialidades] = useState(new Set());
     const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false); // <--- nova linha
@@ -151,6 +154,69 @@ const Cadastro = () => {
                 return newErrors;
             });
         }
+    };
+
+    const handleCepLookup = async () => {
+        const cep = formData.cep.replace(/\D/g, ''); // Remove tudo que não for dígito
+        if (cep.length !== 8) {
+            setCepError('CEP deve conter 8 dígitos.');
+            return;
+        }
+
+        setIsCepLoading(true);
+        setCepError('');
+        setAddressFieldsDisabled(false);
+
+        try {
+            // Chama a API ViaCEP
+            const viaCepResponse = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
+
+            if (viaCepResponse.data.erro) {
+                throw new Error('CEP não encontrado.');
+            }
+
+            const { logradouro, localidade, uf } = viaCepResponse.data;
+
+            if (!localidade || !uf) {
+                throw new Error('Dados de Cidade/Estado não retornados pelo CEP.');
+            }
+
+            // Agora, busca os IDs da nossa própria API com os dados retornados
+            const ourApiResponse = await axios.get(`/api/dados/localizacao-por-nome?uf=${uf}&cidade=${localidade}`);
+            const { id_estado, id_cidade, nome_cidade } = ourApiResponse.data;
+
+            // Preenche o formulário e os estados
+            setFormData(prev => ({ ...prev, rua: logradouro }));
+            setEnderecoEstadoId(id_estado);
+            setEnderecoCity({ id_cidade, nome: nome_cidade });
+
+            // Trava os campos
+            setAddressFieldsDisabled(true);
+
+        } catch (error) {
+            console.error("Erro ao buscar CEP:", error);
+            setCepError('CEP inválido ou não encontrado. Por favor, preencha manualmente.');
+            handleClearAddress(false); // Chama a função para limpar, mas sem limpar o CEP
+        } finally {
+            setIsCepLoading(false);
+        }
+    };
+
+    // <<< 3. NOVA FUNÇÃO PARA LIBERAR OS CAMPOS
+    const handleClearAddress = (clearCep = true) => {
+        setFormData(prev => ({
+            ...prev,
+            rua: '',
+            numero: '',
+            complemento: '',
+            // Só limpa o CEP se for chamado pelo botão do usuário
+            cep: clearCep ? '' : prev.cep
+        }));
+        setEnderecoEstadoId('');
+        setEnderecoCity(null);
+        setAddressFieldsDisabled(false);
+        // Limpa o erro do CEP ao limpar o endereço
+        if (cepError) setCepError('');
     };
 
     const validateForm = () => {
@@ -334,10 +400,10 @@ const Cadastro = () => {
                 ) : (
                     <p>{tipoUsuario === 'P' ? 'Selecione as áreas em que você atua.' : 'Selecione as áreas de interesse da sua empresa.'}</p>
                 )}
-                {errors.especialidades && <span className="field-error" style={{display: 'block', marginTop: '0.5rem'}}>{errors.especialidades}</span>}
-                <button 
-                    type="button" 
-                    onClick={() => setIsEspecialidadesModalOpen(true)} 
+                {errors.especialidades && <span className="field-error" style={{ display: 'block', marginTop: '0.5rem' }}>{errors.especialidades}</span>}
+                <button
+                    type="button"
+                    onClick={() => setIsEspecialidadesModalOpen(true)}
                     style={{ marginBottom: '1.5rem' }}
                     title="Clique para abrir a lista de todas as especialidades disponíveis para seleção."
                 >
@@ -386,8 +452,8 @@ const Cadastro = () => {
                         </button>
                     </div>
                     <RequiredNotice />
-                    
-                    <div style={{ 
+
+                    <div style={{
                         maxHeight: enderecoModalMaxHeight,
                         overflowY: 'auto',
                         padding: '1rem',
@@ -397,14 +463,30 @@ const Cadastro = () => {
                         <Tabs>
                             <Tab label="1. Endereço">
                                 <div style={{ padding: '1rem' }}>
-                                    <p>Primeiro, preencha seu endereço principal.</p>
+                                    <p>Digite seu CEP para preenchimento automático do endereço.</p>
                                     <div className="form-group">
                                         <label className="required">CEP</label>
-                                        <input type="text" name="cep" value={formData.cep} onChange={onChange} title="Digite o CEP para buscar o endereço." />
+                                        {/* <<< 4. INPUT DE CEP ATUALIZADO */}
+                                        <input
+                                            type="text"
+                                            name="cep"
+                                            value={formData.cep}
+                                            onChange={onChange}
+                                            onBlur={handleCepLookup}
+                                            maxLength="8"
+                                            title="Digite seu CEP e saia do campo para buscar o endereço automaticamente."
+                                        />
+                                        {isCepLoading && <small>Buscando...</small>}
+                                        {cepError && <span className="field-error">{cepError}</span>}
                                     </div>
+                                    {addressFieldsDisabled && (
+                                        <button type="button" onClick={() => handleClearAddress(true)} style={{ marginBottom: '1rem' }}>
+                                            Limpar/Editar Endereço
+                                        </button>
+                                    )}
                                     <div className="form-group">
                                         <label className="required">Logradouro</label>
-                                        <input type="text" name="rua" value={formData.rua} onChange={onChange} title="Nome da sua rua ou avenida." />
+                                        <input type="text" name="rua" value={formData.rua} onChange={onChange} title="Nome da sua rua ou avenida." disabled={addressFieldsDisabled} />
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Número</label>
@@ -416,21 +498,21 @@ const Cadastro = () => {
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Estado</label>
-                                        <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required title="Selecione o estado do seu endereço.">
+                                        <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required title="Selecione o estado do seu endereço." disabled={addressFieldsDisabled}>
                                             <option value="">-- Selecione --</option>
                                             {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                         </select>
                                     </div>
                                     <div className="form-group">
                                         <label className="required">Cidade</label>
-                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade. Se não existir, ela será criada." />
+                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} title="Digite o nome da sua cidade. Se não existir, ela será criada." disabled={addressFieldsDisabled} />
                                     </div>
                                 </div>
                             </Tab>
                             <Tab label="2. Região de Atuação">
                                 <div style={{ padding: '1rem' }}>
                                     <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
-                                    
+
                                     <div className="form-group">
                                         <label className="required">Estado da Região</label>
                                         <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required title="Selecione o estado onde você atua.">
@@ -459,20 +541,20 @@ const Cadastro = () => {
                         </Tabs>
                     </div>
 
-                    <div style={{ 
+                    <div style={{
                         marginTop: '1rem',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
                         <span>
-                            {enderecoCity && regiaoCity ? 
-                                `Endereço em ${enderecoCity.nome} e região em ${regiaoCity.nome}` : 
+                            {enderecoCity && regiaoCity ?
+                                `Endereço em ${enderecoCity.nome} e região em ${regiaoCity.nome}` :
                                 'Defina o endereço e a região'}
                         </span>
-                        <button 
-                            type="button" 
-                            onClick={() => setIsModalOpen(false)} 
+                        <button
+                            type="button"
+                            onClick={() => setIsModalOpen(false)}
                             className="btn btn-primary"
                         >
                             Confirmar e Fechar
@@ -488,7 +570,7 @@ const Cadastro = () => {
                         </button>
                     </div>
                     <RequiredNotice />
-                    
+
                     <div className="search-box" style={{ marginBottom: '1rem' }}>
                         <input
                             type="text"
@@ -498,7 +580,7 @@ const Cadastro = () => {
                                 const searchBox = e.target;
                                 const filter = searchBox.value.toLowerCase();
                                 const labels = document.querySelectorAll('.especialidades-modal .checkbox-label');
-                                
+
                                 labels.forEach(label => {
                                     const text = label.textContent.toLowerCase();
                                     label.style.display = text.includes(filter) ? '' : 'none';
@@ -514,8 +596,8 @@ const Cadastro = () => {
                         />
                     </div>
 
-                    <div className="especialidades-modal" style={{ 
-                        maxHeight: especialidadesModalMaxHeight, 
+                    <div className="especialidades-modal" style={{
+                        maxHeight: especialidadesModalMaxHeight,
                         overflowY: 'auto',
                         padding: '1rem',
                         border: '1px solid #ddd',
@@ -528,7 +610,7 @@ const Cadastro = () => {
                                 marginBottom: '0.5rem',
                                 borderBottom: '1px solid #eee'
                             }}>
-                                <input 
+                                <input
                                     type="checkbox"
                                     checked={minhasEspecialidades.has(area.id_area)}
                                     onChange={() => handleEspecialidadeChange(area.id_area)}
@@ -539,16 +621,16 @@ const Cadastro = () => {
                         ))}
                     </div>
 
-                    <div style={{ 
+                    <div style={{
                         marginTop: '1rem',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
                     }}>
                         <span>{minhasEspecialidades.size} especialidade(s) selecionada(s)</span>
-                        <button 
-                            type="button" 
-                            onClick={() => setIsEspecialidadesModalOpen(false)} 
+                        <button
+                            type="button"
+                            onClick={() => setIsEspecialidadesModalOpen(false)}
                             className="btn btn-primary"
                         >
                             Confirmar Seleção
