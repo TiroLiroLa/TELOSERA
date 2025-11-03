@@ -6,6 +6,7 @@ const db = require('../config/db');
 const upload = require('../middleware/upload');
 const { moderateText, moderateImages } = require('../utils/moderationService');
 const fs = require('fs'); // <<< Importar o módulo File System
+const cloudinary = require('../config/cloudinary'); // <<< 1. Importar a configuração do Cloudinary
 
 // @route   GET /api/anuncios/meus-confirmados
 // @desc    Buscar anúncios que o usuário publicou e que foram confimados
@@ -427,7 +428,7 @@ router.get('/', async (req, res) => {
 // @access  Privado
 router.post('/', auth, upload.array('images', 5), async (req, res) => {
     const dadosFormulario = JSON.parse(req.body.jsonData);
-    const files = req.files;
+    const files = req.files; // Arquivos salvos localmente pelo multer
     const { titulo, descricao, ...outrosDados } = dadosFormulario;
 
     // --- ETAPA 1: MODERAÇÃO DE CONTEÚDO (CONDICIONAL) ---
@@ -467,6 +468,20 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        let uploadedImageUrls = [];
+        if (files && files.length > 0) {
+            const uploadPromises = files.map(file => 
+                // Para cada arquivo, envia para o Cloudinary
+                cloudinary.uploader.upload(file.path, {
+                    folder: "telosera_anuncios", // Opcional: organiza os uploads em uma pasta no Cloudinary
+                    resource_type: "image"
+                })
+            );
+            const uploadResults = await Promise.all(uploadPromises);
+            // Pega as URLs seguras retornadas pelo Cloudinary
+            uploadedImageUrls = uploadResults.map(result => result.secure_url);
+        }
+
         const { fk_Area_id_area, fk_id_servico, localizacao, fk_id_cidade, data_servico, tipo } = outrosDados;
         const idUsuario = req.user.id;
 
@@ -477,8 +492,14 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         const novoAnuncioResult = await client.query(`INSERT INTO Anuncio (titulo, descricao, tipo, fk_id_usuario, fk_Area_id_area, fk_id_servico, local, fk_id_cidade, data_servico, status) VALUES ($1, $2, $3, $4, $5, $6, ST_GeomFromText($7, 4326), $8, $9, true) RETURNING id_anuncio`, [titulo, descricao, tipo, idUsuario, fk_Area_id_area, fk_id_servico, point, fk_id_cidade, data_servico]);
         const idAnuncio = novoAnuncioResult.rows[0].id_anuncio;
 
-        if (files && files.length > 0) {
-            const imageInsertPromises = files.map(file => client.query('INSERT INTO Anuncio_Imagem (fk_id_anuncio, caminho_imagem) VALUES ($1, $2)', [idAnuncio, `/uploads/${file.filename}`]));
+        // Salva as URLs do Cloudinary no nosso banco
+        if (uploadedImageUrls.length > 0) {
+            const imageInsertPromises = uploadedImageUrls.map(url => {
+                return client.query(
+                    'INSERT INTO Anuncio_Imagem (fk_id_anuncio, caminho_imagem) VALUES ($1, $2)',
+                    [idAnuncio, url]
+                );
+            });
             await Promise.all(imageInsertPromises);
         }
 
@@ -491,6 +512,9 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         console.error(dbError.message);
         res.status(500).send("Erro ao salvar o anúncio no banco de dados.");
     } finally {
+        if (files && files.length > 0) {
+            files.forEach(file => fs.unlinkSync(file.path));
+        }
         client.release();
     }
 });

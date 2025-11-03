@@ -163,7 +163,7 @@ const AnuncioDetalhe = () => {
     const postadoEm = new Date(anuncio.data_publicacao).toLocaleDateString('pt-BR');
 
     const lightboxImages = anuncio.imagens?.map(img => ({
-        src: `http://localhost:3001${img.caminho_imagem}`
+        src: `${img.caminho_imagem}`
     })) || [];
 
     const displayImages = anuncio.imagens ? anuncio.imagens.slice(0, 3) : [];
@@ -195,7 +195,7 @@ const AnuncioDetalhe = () => {
                                             onClick={() => openLightbox(index)}
                                         >
                                             <img
-                                                src={`http://localhost:3001${img.caminho_imagem}`}
+                                                src={`${img.caminho_imagem}`}
                                                 alt={`Imagem ${index + 1} do anúncio`}
                                                 className="gallery-image"
                                             />

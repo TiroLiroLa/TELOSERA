@@ -20,7 +20,7 @@ const AnuncioCard = ({ anuncio }) => {
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
     const imageUrl = anuncio.imagem_capa
-        ? `http://localhost:3001${anuncio.imagem_capa}`
+        ? `${anuncio.imagem_capa}`
         : anuncioPlaceholder;
 
     return (
