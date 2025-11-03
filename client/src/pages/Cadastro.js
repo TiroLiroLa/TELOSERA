@@ -36,6 +36,9 @@ const Cadastro = () => {
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+    const [isCepLoading, setIsCepLoading] = useState(false);
+    const [cepError, setCepError] = useState('');
+    const [addressFieldsDisabled, setAddressFieldsDisabled] = useState(false);
 
 
     useEffect(() => {
@@ -87,6 +90,69 @@ const Cadastro = () => {
                 return newErrors;
             });
         }
+    };
+
+    const handleCepLookup = async () => {
+        const cep = formData.cep.replace(/\D/g, ''); // Remove tudo que não for dígito
+        if (cep.length !== 8) {
+            setCepError('CEP deve conter 8 dígitos.');
+            return;
+        }
+
+        setIsCepLoading(true);
+        setCepError('');
+        setAddressFieldsDisabled(false);
+
+        try {
+            // Chama a API ViaCEP
+            const viaCepResponse = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
+
+            if (viaCepResponse.data.erro) {
+                throw new Error('CEP não encontrado.');
+            }
+
+            const { logradouro, localidade, uf } = viaCepResponse.data;
+
+            if (!localidade || !uf) {
+                throw new Error('Dados de Cidade/Estado não retornados pelo CEP.');
+            }
+
+            // Agora, busca os IDs da nossa própria API com os dados retornados
+            const ourApiResponse = await axios.get(`/api/dados/localizacao-por-nome?uf=${uf}&cidade=${localidade}`);
+            const { id_estado, id_cidade, nome_cidade } = ourApiResponse.data;
+
+            // Preenche o formulário e os estados
+            setFormData(prev => ({ ...prev, rua: logradouro }));
+            setEnderecoEstadoId(id_estado);
+            setEnderecoCity({ id_cidade, nome: nome_cidade });
+
+            // Trava os campos
+            setAddressFieldsDisabled(true);
+
+        } catch (error) {
+            console.error("Erro ao buscar CEP:", error);
+            setCepError('CEP inválido ou não encontrado. Por favor, preencha manualmente.');
+            handleClearAddress(false); // Chama a função para limpar, mas sem limpar o CEP
+        } finally {
+            setIsCepLoading(false);
+        }
+    };
+
+    // <<< 3. NOVA FUNÇÃO PARA LIBERAR OS CAMPOS
+    const handleClearAddress = (clearCep = true) => {
+        setFormData(prev => ({
+            ...prev,
+            rua: '',
+            numero: '',
+            complemento: '',
+            // Só limpa o CEP se for chamado pelo botão do usuário
+            cep: clearCep ? '' : prev.cep
+        }));
+        setEnderecoEstadoId('');
+        setEnderecoCity(null);
+        setAddressFieldsDisabled(false);
+        // Limpa o erro do CEP ao limpar o endereço
+        if (cepError) setCepError('');
     };
 
     const validateForm = () => {
@@ -275,16 +341,32 @@ const Cadastro = () => {
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h2>Endereço e Região de Atuação</h2>
 
-                        <Tabs>
+                    <Tabs>
                         <Tab label="1. Endereço">
-                            <p>Primeiro, preencha seu endereço principal.</p>
+                            <p>Digite seu CEP para preenchimento automático do endereço.</p>
                             <div className="form-group">
                                 <label className="required">CEP</label>
-                                <input type="text" name="cep" value={formData.cep} onChange={onChange} />
+                                {/* <<< 4. INPUT DE CEP ATUALIZADO */}
+                                <input
+                                    type="text"
+                                    name="cep"
+                                    value={formData.cep}
+                                    onChange={onChange}
+                                    onBlur={handleCepLookup} // <<< A MÁGICA ACONTECE AQUI
+                                    maxLength="9" // Ex: 88888-888
+                                />
+                                {isCepLoading && <small>Buscando...</small>}
+                                {cepError && <span className="field-error">{cepError}</span>}
                             </div>
+                            {addressFieldsDisabled && (
+                                <button type="button" onClick={() => handleClearAddress(true)} style={{ marginBottom: '1rem' }}>
+                                    Limpar/Editar Endereço
+                                </button>
+                            )}
+
                             <div className="form-group">
                                 <label className="required">Logradouro</label>
-                                <input type="text" name="rua" value={formData.rua} onChange={onChange} />
+                                <input type="text" name="rua" value={formData.rua} onChange={onChange} disabled={addressFieldsDisabled} />
                             </div>
                             <div className="form-group">
                                 <label className="required">Número</label>
@@ -296,19 +378,19 @@ const Cadastro = () => {
                             </div>
                             <div className="form-group">
                                 <label className="required">Estado</label>
-                                <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required>
+                                <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required disabled={addressFieldsDisabled}>
                                     <option value="">-- Selecione --</option>
                                     {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
                                 </select>
                             </div>
                             <div className="form-group">
                                 <label className="required">Cidade</label>
-                                <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} />
+                                <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={(cityName) => handleCreateCity(cityName, enderecoEstadoId)} selectedCity={enderecoCity} disabled={addressFieldsDisabled} />
                             </div>
                         </Tab>
                         <Tab label="2. Região de Atuação">
                             <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
-                            
+
                             <div className="form-group">
                                 <label className="required">Estado da Região</label>
                                 <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
