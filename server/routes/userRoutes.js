@@ -327,7 +327,8 @@ router.post('/register', async (req, res) => {
         fk_id_cidade_endereco,
         localizacao,
         fk_id_cidade_regiao,
-        raio_atuacao
+        raio_atuacao,
+        especialidades // <<< Novo campo
     } = req.body;
 
     if (!nome || !email || !senha || !tipo_usuario || !identificador) {
@@ -376,8 +377,14 @@ router.post('/register', async (req, res) => {
             );
         }
 
-        // --- LÓGICA DE VERIFICAÇÃO DE E-MAIL ---
-        // Cria um token de verificação que expira em 1 hora
+        // Insere especialidades se fornecidas
+        if (especialidades && Array.isArray(especialidades) && especialidades.length > 0) {
+            const insertValues = especialidades.map((idArea, index) => `($1, $${index + 2})`).join(', ');
+            const query = `INSERT INTO Usuario_area (fk_id_usuario, fk_id_area) VALUES ${insertValues}`;
+            await client.query(query, [newUser.id_usuario, ...especialidades]);
+        }
+
+        // Gera token de verificação
         const verificationToken = jwt.sign(
             { userId: newUser.id_usuario },
             process.env.JWT_SECRET,

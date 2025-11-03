@@ -6,6 +6,7 @@ import '../components/Styles.css';
 import './Perfil.css';
 import { AuthContext } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
+import { useHelp } from '../context/HelpContext';
 
 const Perfil = () => {
   const { id } = useParams();
@@ -13,6 +14,18 @@ const Perfil = () => {
   const navigate = useNavigate();
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { setHelpContent } = useHelp();
+
+  useEffect(() => {
+    setHelpContent({
+      title: 'Ajuda: Perfil de Usuário',
+      content: [
+        { item: 'Visão Geral', description: 'Esta é a página de perfil público de um usuário. Aqui você pode ver informações como nome, avaliações, especialidades e região de atuação.' },
+        { item: 'Ações do Dono', description: 'Se você estiver visualizando seu próprio perfil, verá os botões "Editar Perfil" e "Sair".' },
+        { item: 'Região de Atuação', description: 'O mapa mostra a área de cobertura do profissional, baseada em um ponto central e um raio em quilômetros.' },
+      ]
+    });
+  }, [setHelpContent]);
 
   useEffect(() => {
     const fetchPerfil = async () => {

@@ -1,0 +1,20 @@
+.help-trigger-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.help-trigger-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.help-trigger-button img {
+    width: 24px;
+    height: 24px;
+}

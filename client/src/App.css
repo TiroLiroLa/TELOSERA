@@ -53,3 +53,47 @@ main {
     color: #dc3545;
     font-weight: bold;
 }
+
+/* Aviso para campos obrigatórios */
+.required-note {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin: 0.5rem 0 1rem 0;
+}
+.required-note .required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.modal-header-with-help {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.modal-header-with-help h2 {
+    margin: 0;
+}
+
+.help-button-modal {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.help-button-modal:hover {
+    background-color: #f0f0f0;
+}
+
+.help-button-modal img {
+    width: 20px;
+    height: 20px;
+}
+

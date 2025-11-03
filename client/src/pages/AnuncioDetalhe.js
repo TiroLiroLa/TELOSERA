@@ -9,6 +9,8 @@ import mapPinIcon from '../assets/map-pin.svg';
 import StarRating from '../components/StarRating';
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
+import { useHelp } from '../context/HelpContext';
+import helpIcon from '../assets/help-circle.svg';
 
 const AnuncioDetalhe = () => {
     const { id: idAnuncio } = useParams();
@@ -18,6 +20,7 @@ const AnuncioDetalhe = () => {
     const [loading, setLoading] = useState(true);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const { setHelpContent, revertHelpContent, openHelp } = useHelp();
 
     const [statusCandidatura, setStatusCandidatura] = useState({
         carregando: true,
@@ -26,14 +29,43 @@ const AnuncioDetalhe = () => {
     });
 
     useEffect(() => {
-        const fetchAnuncio = async () => {
+        setHelpContent({
+            title: 'Ajuda: Detalhes do Anúncio',
+            content: [
+                { item: 'Informações Gerais', description: 'Aqui você encontra todos os detalhes sobre o anúncio, como descrição, data, tipo e especialização.' },
+                { item: 'Galeria de Imagens', description: 'Clique em qualquer imagem para abri-la em tela cheia. Se houver mais de 3 imagens, um indicador "+N" aparecerá na última.' },
+                { item: 'Informações do Publicador', description: 'Na barra lateral, você vê quem publicou o anúncio, a avaliação média e o link para o perfil completo. Se estiver logado, os dados de contato (e-mail, telefone) ficam visíveis.' },
+                { item: 'Ação Principal', description: 'O botão principal permite que você se candidate à vaga. Se você for o dono do anúncio ou já tiver se candidatado, o botão estará desabilitado.' },
+                { item: 'Anúncio Encerrado', description: 'Se um anúncio estiver encerrado, apenas o dono e o candidato confirmado poderão visualizá-lo.' },
+            ]
+        });
+    }, [setHelpContent]);
+
+    // Ajuda para o Modal do Mapa
+    useEffect(() => {
+        if (isMapModalOpen) {
+            setHelpContent({
+                title: 'Ajuda: Localização do Serviço',
+                content: [
+                    { item: 'Ponto no Mapa', description: 'Este é o local aproximado onde o serviço será realizado, conforme definido pelo anunciante.' },
+                ]
+            });
+        }
+        return () => {
+            if (isMapModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+        };
+    }, [isMapModalOpen, setHelpContent, revertHelpContent]);
+
+    useEffect(() => {
+        const fetchDados = async () => {
             try {
                 setLoading(true);
-                let params = new URLSearchParams();
+                setStatusCandidatura(prev => ({ ...prev, carregando: true }));
 
+                let params = new URLSearchParams();
                 if (isAuthenticated) {
                     try {
-                        const resRegiao = await axios.get('/api/users/me/regiao');
+                        const resRegiao = await axios.get('/api/users/me/regiao').catch(() => null);
                         const { lat, lng } = resRegiao.data;
                         params.append('lat', lat);
                         params.append('lng', lng);
@@ -45,42 +77,23 @@ const AnuncioDetalhe = () => {
                 const res = await axios.get(`/api/anuncios/${idAnuncio}?${params.toString()}`);
                 setAnuncio(res.data);
 
-            } catch (err) {
-                console.error("Erro ao buscar detalhes do anúncio:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (!authLoading) {
-            fetchAnuncio();
-        }
-    }, [idAnuncio, isAuthenticated, authLoading]);
-
-    useEffect(() => {
-        const fetchDados = async () => {
-            try {
-                const resAnuncio = await axios.get(`/api/anuncios/${idAnuncio}`);
-                setAnuncio(resAnuncio.data);
-
                 if (isAuthenticated) {
                     const resCandidatura = await axios.get(`/api/anuncios/${idAnuncio}/verificar-candidatura`);
                     if (resCandidatura.data.candidatado) {
-                        setStatusCandidatura({ candidatado: true, mensagem: 'Candidatura Enviada', carregando: false });
+                        setStatusCandidatura({ carregando: false, candidatado: true, mensagem: 'Candidatura Enviada' });
                     } else {
-                        setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                        setStatusCandidatura({ carregando: false, candidatado: false, mensagem: '' });
                     }
                 } else {
-                    setStatusCandidatura({ candidatado: false, mensagem: '', carregando: false });
+                    setStatusCandidatura({ carregando: false, candidatado: false, mensagem: '' });
                 }
             } catch (err) {
                 console.error("Erro ao buscar dados:", err);
-                setStatusCandidatura({ candidatado: false, mensagem: 'Erro ao carregar dados.', carregando: false });
+                setStatusCandidatura({ carregando: false, candidatado: false, mensagem: 'Erro ao carregar dados.' });
             } finally {
                 setLoading(false);
             }
         };
-
         if (!authLoading) {
             fetchDados();
         }
@@ -113,7 +126,7 @@ const AnuncioDetalhe = () => {
         }
     };
 
-    if (loading) return <div className="container">Carregando...</div>;
+    if (loading || authLoading) return <div className="container">Carregando...</div>;
     if (!anuncio) return <div className="container">Anúncio não encontrado ou indisponível.</div>;
     const distanciaFormatada = formatDistance(anuncio.distancia);
 
@@ -122,21 +135,21 @@ const AnuncioDetalhe = () => {
     const renderActionButton = () => {
         if (!isAuthenticated) {
             return (
-                <Link to="/login" className="btn btn-primary btn-contact">
+                <Link to="/login" className="btn btn-primary btn-cta">
                     Faça login para se candidatar
                 </Link>
             );
         }
         if (isOwner) {
-            return <button className="btn btn-secondary btn-contact" disabled>Você é o dono deste anúncio</button>;
+            return <button className="btn btn-secondary btn-cta" disabled>Você é o dono deste anúncio</button>;
         }
         if (statusCandidatura.candidatado) {
-            return <button className="btn btn-success btn-contact" disabled>{statusCandidatura.mensagem}</button>;
+            return <button className="btn btn-success btn-cta" disabled>{statusCandidatura.mensagem}</button>;
         }
         return (
             <button
                 onClick={handleCandidatar}
-                className="btn btn-primary btn-contact"
+                className="btn btn-primary btn-cta"
                 disabled={statusCandidatura.carregando}
             >
                 {statusCandidatura.carregando ? 'Enviando...' : 'Candidatar-se'}
@@ -253,26 +266,36 @@ const AnuncioDetalhe = () => {
                             </div>
                         )}
 
-                        <div className="contact-details">
-                            <h4>Contato Direto</h4>
-                            <p><strong>E-mail:</strong> {anuncio.email_usuario || "Não informado"}</p>
-                            <p><strong>Telefone:</strong> {anuncio.telefone_usuario || "Não informado"}</p>
-                        </div>
+                        {isAuthenticated && (
+                            <div className="contact-details">
+                                <h4>Contato Direto</h4>
+                                <p><strong>E-mail:</strong> {anuncio.email_usuario || "Não informado"}</p>
+                                <p><strong>Telefone:</strong> {anuncio.telefone_usuario || "Não informado"}</p>
+                            </div>
+                        )}
 
-                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn btn-primary btn-contact">
-                            Acessar Perfil Completo
+                        <Link to={`/perfil/${anuncio.id_publicador}`} className="btn-link-profile">
+                            Ver Perfil Completo
                         </Link>
+                    </div>
+
+                    <div className="cta-container">
                         {renderActionButton()}
                         {!statusCandidatura.candidatado && statusCandidatura.mensagem && (
-                            <p style={{ color: 'red', marginTop: '1rem' }}>{statusCandidatura.mensagem}</p>
+                            <p className="error-message">{statusCandidatura.mensagem}</p>
                         )}
                     </div>
                 </aside>
             </div>
 
             {anuncio.localizacao && (
-                <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)}>
-                    <h2>Localização do Serviço</h2>
+                <Modal isOpen={isMapModalOpen} onClose={() => setMapModalOpen(false)} title="Localização do Serviço">
+                    <div className="modal-header-with-help">
+                        <h2>Localização do Serviço</h2>
+                        <button onClick={openHelp} className="help-button-modal" title="Ajuda (F1)">
+                            <img src={helpIcon} alt="Ajuda" />
+                        </button>
+                    </div>
                     <MoveableMap location={anuncio.localizacao} raio={0.01} />
                 </Modal>
             )}

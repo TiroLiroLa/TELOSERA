@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import './CityAutocomplete.css';
 
-const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity }) => {
+const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity, title }) => {
     const [query, setQuery] = useState(selectedCity ? selectedCity.nome : '');
     const [suggestions, setSuggestions] = useState([]);
     const [isListOpen, setIsListOpen] = useState(false);
@@ -60,6 +60,7 @@ const CityAutocomplete = ({ estadoId, onCitySelect, onCityCreate, selectedCity }
                 onBlur={() => setTimeout(() => setIsListOpen(false), 200)}
                 placeholder="Digite o nome da cidade"
                 disabled={!estadoId}
+                title={title}
             />
             {isListOpen && (
                 <>
