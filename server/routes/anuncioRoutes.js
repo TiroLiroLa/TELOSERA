@@ -430,33 +430,39 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
     const files = req.files;
     const { titulo, descricao, ...outrosDados } = dadosFormulario;
 
-    // --- ETAPA 1: MODERAÇÃO DE CONTEÚDO ---
-    try {
-        // Modera o texto
-        const textModerationResult = await moderateText(titulo, descricao);
-        if (textModerationResult === "UNSAFE") {
-            // Se o texto for impróprio, deleta os arquivos já salvos e retorna erro
-            if (files) files.forEach(file => fs.unlinkSync(file.path));
-            return res.status(400).json({ msg: "O texto do seu anúncio foi considerado impróprio. Por favor, revise o título e a descrição." });
-        }
-
-        // Modera as imagens
-        if (files && files.length > 0) {
-            // Envia todas as imagens de uma vez para análise
-            const imageModerationResult = await moderateImages(files);
-            
-            if (imageModerationResult === "UNSAFE") {
-                files.forEach(file => fs.unlinkSync(file.path));
-                return res.status(400).json({ msg: "Uma ou mais imagens enviadas foram consideradas impróprias." });
+    // --- ETAPA 1: MODERAÇÃO DE CONTEÚDO (CONDICIONAL) ---
+    
+    // <<< A LÓGICA DA FEATURE FLAG ESTÁ AQUI
+    // Verifica se a variável de ambiente é 'true'.
+    if (process.env.ENABLE_MODERATION === 'true') {
+        try {
+            console.log("Moderação de conteúdo HABILITADA.");
+            // Modera o texto
+            const textModerationResult = await moderateText(titulo, descricao);
+            if (textModerationResult === "UNSAFE") {
+                if (files) files.forEach(file => fs.unlinkSync(file.path));
+                return res.status(400).json({ msg: "O texto do seu anúncio foi considerado impróprio. Por favor, revise o título e a descrição." });
             }
+
+            // Modera as imagens
+            if (files && files.length > 0) {
+                const imageModerationResult = await moderateImages(files);
+                if (imageModerationResult === "UNSAFE") {
+                    files.forEach(file => fs.unlinkSync(file.path));
+                    return res.status(400).json({ msg: "Uma ou mais imagens enviadas foram consideradas impróprias." });
+                }
+            }
+        } catch (moderationError) {
+            if (files) files.forEach(file => fs.unlinkSync(file.path));
+            console.error("Erro durante o processo de moderação:", moderationError);
+            return res.status(500).send("Erro durante o processo de moderação.");
         }
-    } catch (moderationError) {
-        if (files) files.forEach(file => fs.unlinkSync(file.path));
-        console.error("Erro durante o processo de moderação:", moderationError);
-        return res.status(500).send("Erro durante o processo de moderação.");
+    } else {
+        // Se a moderação estiver desabilitada, apenas loga uma mensagem
+        console.log("Moderação de conteúdo DESABILITADA.");
     }
 
-    // --- ETAPA 2: SALVAR NO BANCO (se a moderação passou) ---
+    // --- ETAPA 2: SALVAR NO BANCO (executa independentemente da moderação) ---
     const client = await db.pool.connect();
     try {
         await client.query('BEGIN');
@@ -477,7 +483,7 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         }
 
         await client.query('COMMIT');
-        res.status(201).json({ msg: 'Anúncio publicado com sucesso após verificação!' });
+        res.status(201).json({ msg: 'Anúncio publicado com sucesso!' }); // Mensagem genérica
 
     } catch (dbError) {
         if (files) files.forEach(file => fs.unlinkSync(file.path));
