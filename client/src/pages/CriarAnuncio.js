@@ -124,10 +124,26 @@ const CriarAnuncio = () => {
         }
     };
 
+    const validateForm = () => {
+        const newErrors = {};
+        const { titulo, descricao, fk_Area_id_area, fk_id_servico } = formData;
+
+        if (!titulo.trim()) newErrors.titulo = 'O título é obrigatório.';
+        if (!descricao.trim()) newErrors.descricao = 'A descrição é obrigatória.';
+        if (!fk_Area_id_area) newErrors.fk_Area_id_area = 'A especialização é obrigatória.';
+        if (!fk_id_servico) newErrors.fk_id_servico = 'O serviço principal é obrigatório.';
+        if (!regiaoCity) newErrors.localizacao = 'É obrigatório definir a localização.';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const onSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) {
+            return;
+        }
         setIsSubmitting(true); // <<< Ativa o estado de carregamento
-        setErrors({}); // Limpa erros antigos
 
 
         const dadosFormulario = {
@@ -156,7 +172,18 @@ const CriarAnuncio = () => {
         }
     };
 
-    const onChange = e => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const onChange = e => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        // Limpa o erro do campo específico ao ser alterado
+        if (errors[name]) {
+            setErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors[name];
+                return newErrors;
+            });
+        }
+    };
     const handleCreateCity = async (cityName, estadoId) => {
         if (!estadoId) { alert("Selecione um estado."); return null; }
         try {
@@ -196,21 +223,24 @@ const CriarAnuncio = () => {
                 <div className="form-group">
                     <label className="required">{textosUI.labelTitulo || 'Título'}</label>
                     <input type="text" name="titulo" value={formData.titulo} onChange={onChange} placeholder={textosUI.placeholderTitulo} required title="Crie um título claro e objetivo para o seu anúncio." />
+                    {errors.titulo && <span className="field-error">{errors.titulo}</span>}
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelDescricao || 'Descrição'}</label>
                     <textarea name="descricao" value={formData.descricao} onChange={onChange} rows="5" required title="Descreva em detalhes o serviço oferecido ou a vaga disponível. Inclua requisitos, diferenciais, etc." />
+                    {errors.descricao && <span className="field-error">{errors.descricao}</span>}
                 </div>
                 <div className="form-group">
                     <label className="required">Especialização</label>
                     <select name="fk_Area_id_area" value={formData.fk_Area_id_area} onChange={onChange} required title="Selecione a principal área de atuação relacionada a este anúncio.">
                         <option value="">-- Selecione uma especialização --</option>
                         {areas.map(area => (
-                            <option key={area.id_area} value={area.id_area}>
+                            <option key={area.id_area} value={area.id_area} >
                                 {area.nome}
                             </option>
                         ))}
                     </select>
+                    {errors.fk_Area_id_area && <span className="field-error">{errors.fk_Area_id_area}</span>}
                 </div>
                 <div className="form-group">
                     <label className="required">Serviço Principal</label>
@@ -222,6 +252,7 @@ const CriarAnuncio = () => {
                             </option>
                         ))}
                     </select>
+                    {errors.fk_id_servico && <span className="field-error">{errors.fk_id_servico}</span>}
                 </div>
                 <div className="form-group">
                     <label className="required">{textosUI.labelData || 'Data'}</label>
@@ -244,6 +275,7 @@ const CriarAnuncio = () => {
                 <hr style={{ margin: "1rem 0" }} />
                 <h3>{textosUI.labelLocal || 'Localização'}</h3>
                 {regiaoCity && <div className="summary-box">Cidade definida: <strong>{regiaoCity.nome}</strong></div>}
+                {errors.localizacao && <span className="field-error" style={{ display: 'block', marginBottom: '1rem' }}>{errors.localizacao}</span>}
                 <button type="button" onClick={() => setIsModalOpen(true)} style={{ marginBottom: '1.5rem' }} title="Defina a cidade onde o serviço será realizado.">
                     {regiaoCity ? 'Alterar Localização' : 'Definir Localização'}
                 </button>

@@ -221,7 +221,7 @@ const Cadastro = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        const { nome, email, senha, confirmarSenha, identificador } = formData;
+        const { nome, email, senha, confirmarSenha, identificador, telefone } = formData;
 
         if (!nome.trim()) newErrors.nome = 'Nome / Razão Social é obrigatório.';
         if (!email.trim()) newErrors.email = 'E-mail é obrigatório.';
@@ -229,6 +229,8 @@ const Cadastro = () => {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) newErrors.email = 'Formato de e-mail inválido.';
         }
+
+        if (!telefone.trim()) newErrors.telefone = 'Telefone é obrigatório.';
 
         const isPasswordStrong = senha.length >= 6 && /(?=.*[A-Z])/.test(senha) && /(?=.*[0-9])/.test(senha);
         if (!isPasswordStrong) {
@@ -362,8 +364,9 @@ const Cadastro = () => {
                     {errors.email && <span className="field-error">{errors.email}</span>}
                 </div>
                 <div className="form-group">
-                    <label htmlFor="telefone">Telefone</label>
+                    <label htmlFor="telefone" className="required">Telefone</label>
                     <input type="tel" id="telefone" name="telefone" value={formData.telefone} onChange={onChange} title="Seu número de telefone ou WhatsApp para contato." />
+                    {errors.telefone && <span className="field-error">{errors.telefone}</span>}
                 </div>
                 <div className="form-group">
                     <label htmlFor="senha" className="required">Senha</label>
