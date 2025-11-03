@@ -99,8 +99,8 @@
 }
 
 .btn-contact {
-    width: 100%;
-    margin-top: 1rem;
+    /* Esta classe pode ser removida ou ter seu conteúdo esvaziado */
+    /* Mantida para evitar quebras, mas sem efeito visual direto */
 }
 
 .anuncio-subheader a {
@@ -214,4 +214,50 @@
     border-radius: 8px;
     position: relative;
     cursor: pointer;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.btn-link-profile {
+    display: inline-block;
+    margin-top: 1rem;
+    font-weight: 500;
+    color: #007bff;
+    text-decoration: none;
+}
+.btn-link-profile:hover {
+    text-decoration: underline;
+}
+
+.cta-container {
+    text-align: center;
+}
+
+.btn-cta {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-success.btn-cta {
+    background-color: #28a745;
+    color: white;
+}
+.cta-container .error-message {
+    margin-top: 1rem;
+    text-align: center;
 }

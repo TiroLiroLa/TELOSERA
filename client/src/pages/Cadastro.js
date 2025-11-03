@@ -9,6 +9,7 @@ import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const Cadastro = () => {
     const [etapa, setEtapa] = useState(1);
@@ -36,18 +37,25 @@ const Cadastro = () => {
     const [regiaoEstadoId, setRegiaoEstadoId] = useState('');
     const [regiaoCity, setRegiaoCity] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
+    const [todasEspecialidades, setTodasEspecialidades] = useState([]);
+    const [minhasEspecialidades, setMinhasEspecialidades] = useState(new Set());
+    const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false); // <--- nova linha
 
 
     useEffect(() => {
-        const fetchEstados = async () => {
+        const fetchData = async () => {
             try {
-                const res = await axios.get('/api/dados/estados');
-                setEstados(res.data);
+                const [resEstados, resAreas] = await Promise.all([
+                    axios.get('/api/dados/estados'),
+                    axios.get('/api/dados/areas')
+                ]);
+                setEstados(resEstados.data);
+                setTodasEspecialidades(resAreas.data);
             } catch (err) {
-                console.error("Erro ao buscar estados", err);
+                console.error("Erro ao buscar dados para o cadastro", err);
             }
         };
-        fetchEstados();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -119,6 +127,10 @@ const Cadastro = () => {
         if (!enderecoCity) newErrors.localizacao = 'É necessário definir um endereço (Estado e Cidade).';
         if (!regiaoCity) newErrors.localizacao = 'É necessário definir uma região de atuação (Estado e Cidade).';
 
+        if (tipoUsuario === 'P' && minhasEspecialidades.size === 0) {
+            newErrors.especialidades = 'Prestadores de serviço devem selecionar pelo menos uma especialidade.';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -136,6 +148,7 @@ const Cadastro = () => {
             fk_id_cidade_endereco: enderecoCity?.id_cidade,
             localizacao: location,
             fk_id_cidade_regiao: regiaoCity?.id_cidade,
+            especialidades: Array.from(minhasEspecialidades)
         };
 
         try {
@@ -172,6 +185,21 @@ const Cadastro = () => {
     };
     const onLocationSelect = (latlng) => { setLocation(latlng); };
 
+    const handleEspecialidadeChange = (idArea) => {
+        setMinhasEspecialidades(prev => {
+            const newSelection = new Set(prev);
+            if (newSelection.has(idArea)) {
+                newSelection.delete(idArea);
+            } else {
+                newSelection.add(idArea);
+            }
+            return newSelection;
+        });
+        if (errors.especialidades) {
+            setErrors(prev => ({ ...prev, especialidades: undefined }));
+        }
+    };
+
     const renderEtapa1 = () => (
         <div className="tipo-conta-escolha">
             <button className="tipo-conta-btn" onClick={() => handleTipoSelect('P')}>
@@ -192,6 +220,7 @@ const Cadastro = () => {
 
         return (
             <form onSubmit={onSubmit} className="cadastro-form" noValidate>
+                <RequiredNotice /> {/* <-- aviso inserido */}
                 <button type="button" className="back-button" onClick={() => setEtapa(1)}>&larr; Voltar</button>
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
@@ -239,6 +268,24 @@ const Cadastro = () => {
                 </div>
 
                 <hr style={{ margin: "1rem 0" }} />
+                <h3>Especialidades</h3>
+                {minhasEspecialidades.size > 0 ? (
+                    <div className="summary-box">
+                        {minhasEspecialidades.size} especialidade(s) selecionada(s)
+                    </div>
+                ) : (
+                    <p>{tipoUsuario === 'P' ? 'Selecione as áreas em que você atua.' : 'Selecione as áreas de interesse da sua empresa.'}</p>
+                )}
+                {errors.especialidades && <span className="field-error" style={{display: 'block', marginTop: '0.5rem'}}>{errors.especialidades}</span>}
+                <button 
+                    type="button" 
+                    onClick={() => setIsEspecialidadesModalOpen(true)} 
+                    style={{ marginBottom: '1.5rem' }}
+                >
+                    {minhasEspecialidades.size > 0 ? 'Alterar Especialidades' : 'Selecionar Especialidades'}
+                </button>
+
+                <hr style={{ margin: "1rem 0" }} />
                 <h3>Endereço Principal & Região de Atuação</h3>
                 {localizacaoDefinida ? (
                     <div className="summary-box">
@@ -274,70 +321,169 @@ const Cadastro = () => {
                 {etapa === 3 && renderEtapa3()}
                 <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                     <h2>Endereço e Região de Atuação</h2>
-
+                    <RequiredNotice />
+                    
+                    <div style={{ 
+                        maxHeight: '500px', // Aumentado para acomodar as duas abas
+                        overflowY: 'auto',
+                        padding: '1rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px'
+                    }}>
                         <Tabs>
-                        <Tab label="1. Endereço">
-                            <p>Primeiro, preencha seu endereço principal.</p>
-                            <div className="form-group">
-                                <label className="required">CEP</label>
-                                <input type="text" name="cep" value={formData.cep} onChange={onChange} />
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Logradouro</label>
-                                <input type="text" name="rua" value={formData.rua} onChange={onChange} />
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Número</label>
-                                <input type="text" name="numero" value={formData.numero} onChange={onChange} />
-                            </div>
-                            <div className="form-group">
-                                <label>Complemento</label>
-                                <input type="text" name="complemento" value={formData.complemento} onChange={onChange} />
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Estado</label>
-                                <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required>
-                                    <option value="">-- Selecione --</option>
-                                    {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Cidade</label>
-                                <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} />
-                            </div>
-                        </Tab>
-                        <Tab label="2. Região de Atuação">
-                            <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
-                            
-                            <div className="form-group">
-                                <label className="required">Estado da Região</label>
-                                <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
-                                    <option value="">-- Selecione --</option>
-                                    {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Cidade Central da Região</label>
-                                <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} />
-                            </div>
-
-                            <div className="form-group">
-                                <label>Ponto Central de Atuação</label>
-                                <div style={{ height: '250px' }}>
-                                    {/* A prop 'onLocationSelect' agora aponta para a função simplificada */}
-                                    <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} radiusKm={formData.raio_atuacao} />
+                            <Tab label="1. Endereço">
+                                <div style={{ padding: '1rem' }}>
+                                    <p>Primeiro, preencha seu endereço principal.</p>
+                                    <div className="form-group">
+                                        <label className="required">CEP</label>
+                                        <input type="text" name="cep" value={formData.cep} onChange={onChange} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Logradouro</label>
+                                        <input type="text" name="rua" value={formData.rua} onChange={onChange} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Número</label>
+                                        <input type="text" name="numero" value={formData.numero} onChange={onChange} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Complemento</label>
+                                        <input type="text" name="complemento" value={formData.complemento} onChange={onChange} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Estado</label>
+                                        <select value={enderecoEstadoId} onChange={e => { setEnderecoEstadoId(e.target.value); setEnderecoCity(null); }} required>
+                                            <option value="">-- Selecione --</option>
+                                            {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Cidade</label>
+                                        <CityAutocomplete estadoId={enderecoEstadoId} onCitySelect={setEnderecoCity} onCityCreate={handleCreateCity} selectedCity={enderecoCity} />
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="form-group">
-                                <label className="required">Raio de Atuação (km)</label>
-                                <input type="number" name="raio_atuacao" value={formData.raio_atuacao} onChange={onChange} />
-                            </div>
-                        </Tab>
-                    </Tabs>
+                            </Tab>
+                            <Tab label="2. Região de Atuação">
+                                <div style={{ padding: '1rem' }}>
+                                    <p>Selecione a cidade e, se desejar, ajuste o pino no mapa.</p>
+                                    
+                                    <div className="form-group">
+                                        <label className="required">Estado da Região</label>
+                                        <select value={regiaoEstadoId} onChange={e => { setRegiaoEstadoId(e.target.value); setRegiaoCity(null); }} required>
+                                            <option value="">-- Selecione --</option>
+                                            {estados.map(e => <option key={e.id_estado} value={e.id_estado}>{e.nome} ({e.uf})</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Cidade Central da Região</label>
+                                        <CityAutocomplete estadoId={regiaoEstadoId} onCitySelect={setRegiaoCity} onCityCreate={handleCreateCity} selectedCity={regiaoCity} />
+                                    </div>
 
-                    <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-primary" style={{ marginTop: '2rem' }}>
-                        Confirmar e Fechar
-                    </button>
+                                    <div className="form-group">
+                                        <label>Ponto Central de Atuação</label>
+                                        <div style={{ height: '250px' }}>
+                                            {/* A prop 'onLocationSelect' agora aponta para a função simplificada */}
+                                            <LocationPicker onLocationSelect={onLocationSelect} initialPosition={location} radiusKm={formData.raio_atuacao} />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="required">Raio de Atuação (km)</label>
+                                        <input type="number" name="raio_atuacao" value={formData.raio_atuacao} onChange={onChange} />
+                                    </div>
+                                </div>
+                            </Tab>
+                        </Tabs>
+                    </div>
+
+                    <div style={{ 
+                        marginTop: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <span>
+                            {enderecoCity && regiaoCity ? 
+                                `Endereço em ${enderecoCity.nome} e região em ${regiaoCity.nome}` : 
+                                'Defina o endereço e a região'}
+                        </span>
+                        <button 
+                            type="button" 
+                            onClick={() => setIsModalOpen(false)} 
+                            className="btn btn-primary"
+                        >
+                            Confirmar e Fechar
+                        </button>
+                    </div>
+                </Modal>
+
+                <Modal isOpen={isEspecialidadesModalOpen} onClose={() => setIsEspecialidadesModalOpen(false)}>
+                    <h2>Selecionar Especialidades</h2>
+                    <RequiredNotice />
+                    
+                    <div className="search-box" style={{ marginBottom: '1rem' }}>
+                        <input
+                            type="text"
+                            placeholder="Buscar especialidades..."
+                            onChange={(e) => {
+                                const searchBox = e.target;
+                                const filter = searchBox.value.toLowerCase();
+                                const labels = document.querySelectorAll('.especialidades-modal .checkbox-label');
+                                
+                                labels.forEach(label => {
+                                    const text = label.textContent.toLowerCase();
+                                    label.style.display = text.includes(filter) ? '' : 'none';
+                                });
+                            }}
+                            style={{
+                                width: '100%',
+                                padding: '0.5rem',
+                                marginBottom: '1rem',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px'
+                            }}
+                        />
+                    </div>
+
+                    <div className="especialidades-modal" style={{ 
+                        maxHeight: '400px', 
+                        overflowY: 'auto',
+                        padding: '1rem',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px'
+                    }}>
+                        {todasEspecialidades.map(area => (
+                            <label key={area.id_area} className="checkbox-label" style={{
+                                display: 'flex',
+                                padding: '0.5rem',
+                                marginBottom: '0.5rem',
+                                borderBottom: '1px solid #eee'
+                            }}>
+                                <input 
+                                    type="checkbox"
+                                    checked={minhasEspecialidades.has(area.id_area)}
+                                    onChange={() => handleEspecialidadeChange(area.id_area)}
+                                    style={{ marginRight: '1rem' }}
+                                />
+                                {area.nome}
+                            </label>
+                        ))}
+                    </div>
+
+                    <div style={{ 
+                        marginTop: '1rem',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <span>{minhasEspecialidades.size} especialidade(s) selecionada(s)</span>
+                        <button 
+                            type="button" 
+                            onClick={() => setIsEspecialidadesModalOpen(false)} 
+                            className="btn btn-primary"
+                        >
+                            Confirmar Seleção
+                        </button>
+                    </div>
                 </Modal>
             </div>
         </div>

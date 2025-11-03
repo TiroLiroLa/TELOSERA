@@ -9,6 +9,7 @@ import Modal from '../components/Modal';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import './CriarAnuncio.css';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const CriarAnuncio = () => {
     const navigate = useNavigate();
@@ -27,6 +28,7 @@ const CriarAnuncio = () => {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previewImages, setPreviewImages] = useState([]);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false); // <<< Novo estado de carregamento
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [location, setLocation] = useState(null);
@@ -92,6 +94,9 @@ const CriarAnuncio = () => {
 
     const onSubmit = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true); // <<< Ativa o estado de carregamento
+        setErrors({}); // Limpa erros antigos
+
 
         const dadosFormulario = {
             ...formData,
@@ -114,6 +119,8 @@ const CriarAnuncio = () => {
             navigate('/dashboard');
         } catch (err) {
             setErrors({ api: err.response?.data?.msg || 'Erro ao criar anúncio.' });
+        } finally {
+            setIsSubmitting(false); // <<< Desativa o estado de carregamento, independentemente do resultado
         }
     };
 
@@ -142,6 +149,8 @@ const CriarAnuncio = () => {
         <div className="criar-anuncio-container">
             <h1>{textosUI.tituloPagina || 'Publicar Anúncio'}</h1>
             <form onSubmit={onSubmit} noValidate>
+                <RequiredNotice /> {/* <-- aviso inserido */}
+
                 {errors.api && <div className="error-message">{errors.api}</div>}
 
                 {/* --- Campos do Formulário --- */}
@@ -207,11 +216,14 @@ const CriarAnuncio = () => {
                     {regiaoCity ? 'Alterar Localização' : 'Definir Localização'}
                 </button>
 
-                <button type="submit" className="btn btn-primary">{textosUI.botaoSubmit || 'Publicar'}</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Publicando e Verificando...' : (textosUI.botaoSubmit || 'Publicar')}
+                </button>
             </form>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Definir Localização</h2>
+                <RequiredNotice /> {/* <-- aviso inserido dentro do modal */}
                 <Tabs>
                     <Tab label="1. Cidade">
                         <div className="form-group">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -7,6 +6,7 @@ import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Link, useNavigate } from 'react-router-dom';
 import './EditarPerfil.css';
+import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
 
 const EditarPerfil = () => {
     const { user, loading: authLoading } = useContext(AuthContext);
@@ -189,6 +189,7 @@ const EditarPerfil = () => {
             </aside>
 
             <main className="edit-perfil-main">
+                <RequiredNotice /> {/* <-- aviso inserido no topo da área principal */}
                 {activeSection === 'dados' && (
                     <section className="edit-section">
                         <h2>Dados Básicos</h2>
@@ -204,10 +205,66 @@ const EditarPerfil = () => {
                     <section className="edit-section">
                         <h2>Minhas Especialidades</h2>
                         <form onSubmit={onAreasSubmit}>
-                            <div className="especialidades-grid">
-                                {todasAreas.map(area => (<label key={area.id_area} className="checkbox-label"><input type="checkbox" checked={minhasAreas.has(area.id_area)} onChange={() => handleAreaChange(area.id_area)} />{area.nome}</label>))}
+                            <div className="search-box" style={{ marginBottom: '1rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar especialidades..."
+                                    onChange={(e) => {
+                                        const searchBox = e.target;
+                                        const filter = searchBox.value.toLowerCase();
+                                        const labels = document.querySelectorAll('.especialidades-grid .checkbox-label');
+                                        
+                                        labels.forEach(label => {
+                                            const text = label.textContent.toLowerCase();
+                                            label.style.display = text.includes(filter) ? '' : 'none';
+                                        });
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.5rem',
+                                        marginBottom: '1rem',
+                                        border: '1px solid #ddd',
+                                        borderRadius: '4px'
+                                    }}
+                                />
                             </div>
-                            <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem' }}>Salvar Especialidades</button>
+                            
+                            <div className="especialidades-grid" style={{ 
+                                maxHeight: '400px', 
+                                overflowY: 'auto',
+                                padding: '1rem',
+                                border: '1px solid #ddd',
+                                borderRadius: '4px'
+                            }}>
+                                {todasAreas.map(area => (
+                                    <label key={area.id_area} className="checkbox-label" style={{
+                                        display: 'flex',
+                                        padding: '0.5rem',
+                                        marginBottom: '0.5rem',
+                                        borderBottom: '1px solid #eee'
+                                    }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={minhasAreas.has(area.id_area)} 
+                                            onChange={() => handleAreaChange(area.id_area)}
+                                            style={{ marginRight: '1rem' }}
+                                        />
+                                        {area.nome}
+                                    </label>
+                                ))}
+                            </div>
+                            
+                            <div style={{ 
+                                marginTop: '1rem',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <span>{minhasAreas.size} especialidade(s) selecionada(s)</span>
+                                <button type="submit" className="btn btn-primary">
+                                    Salvar Especialidades
+                                </button>
+                            </div>
                         </form>
                     </section>
                 )}

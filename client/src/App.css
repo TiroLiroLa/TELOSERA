@@ -53,3 +53,14 @@ main {
     color: #dc3545;
     font-weight: bold;
 }
+
+/* Aviso para campos obrigatórios */
+.required-note {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin: 0.5rem 0 1rem 0;
+}
+.required-note .required {
+    color: #dc3545;
+    font-weight: bold;
+}
