@@ -473,7 +473,7 @@ const Cadastro = () => {
                                             value={formData.cep}
                                             onChange={onChange}
                                             onBlur={handleCepLookup}
-                                            maxLength="8"
+                                            maxLength="9"
                                             title="Digite seu CEP e saia do campo para buscar o endereço automaticamente."
                                         />
                                         {isCepLoading && <small>Buscando...</small>}
