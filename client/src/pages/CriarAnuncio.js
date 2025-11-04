@@ -9,7 +9,7 @@ import Modal from '../components/Modal';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import './CriarAnuncio.css';
-import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import RequiredNotice from '../components/RequiredNotice';
 import { useHelp } from '../context/HelpContext';
 import helpIcon from '../assets/help-circle.svg';
 
@@ -30,7 +30,7 @@ const CriarAnuncio = () => {
     const [selectedFiles, setSelectedFiles] = useState([]);
     const [previewImages, setPreviewImages] = useState([]);
     const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false); // <<< Novo estado de carregamento
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const { setHelpContent, revertHelpContent, openHelp } = useHelp();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -143,8 +143,7 @@ const CriarAnuncio = () => {
         if (!validateForm()) {
             return;
         }
-        setIsSubmitting(true); // <<< Ativa o estado de carregamento
-
+        setIsSubmitting(true);
 
         const dadosFormulario = {
             ...formData,
@@ -168,14 +167,13 @@ const CriarAnuncio = () => {
         } catch (err) {
             setErrors({ api: err.response?.data?.msg || 'Erro ao criar anúncio.' });
         } finally {
-            setIsSubmitting(false); // <<< Desativa o estado de carregamento, independentemente do resultado
+            setIsSubmitting(false);
         }
     };
 
     const onChange = e => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
-        // Limpa o erro do campo específico ao ser alterado
         if (errors[name]) {
             setErrors(prev => {
                 const newErrors = { ...prev };

@@ -15,7 +15,6 @@ const StarRating = ({ rating }) => {
     const totalStars = 5;
     const emptyStars = totalStars - Math.round(rating);
 
-    // Adiciona estrelas vazias
     for (let i = 0; i < emptyStars; i++) {
         stars.push(<span key={`empty_${i}`}>&#9734;</span>);
     }

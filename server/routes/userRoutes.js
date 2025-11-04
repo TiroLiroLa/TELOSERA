@@ -23,7 +23,6 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// <<< NOVA ROTA para verificação
 // @route   GET /api/users/verify/:token
 router.get('/verify/:token', async (req, res) => {
     try {
@@ -32,7 +31,6 @@ router.get('/verify/:token', async (req, res) => {
         
         await db.query('UPDATE Usuario SET verificado = TRUE WHERE id_usuario = $1', [decoded.userId]);
         
-        // <<< A CORREÇÃO: Retorna uma mensagem de sucesso em JSON
         res.status(200).json({ msg: 'E-mail verificado com sucesso!' });
 
     } catch (err) {
@@ -328,7 +326,7 @@ router.post('/register', async (req, res) => {
         localizacao,
         fk_id_cidade_regiao,
         raio_atuacao,
-        especialidades // <<< Novo campo
+        especialidades
     } = req.body;
 
     if (!nome || !email || !senha || !tipo_usuario || !identificador) {

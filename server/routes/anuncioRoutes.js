@@ -5,7 +5,7 @@ const authOptional = require('../middleware/authOptional');
 const db = require('../config/db');
 const upload = require('../middleware/upload');
 const { moderateText, moderateImages } = require('../utils/moderationService');
-const fs = require('fs'); // <<< Importar o módulo File System
+const fs = require('fs');
 
 // @route   GET /api/anuncios/meus-confirmados
 // @desc    Buscar anúncios que o usuário publicou e que foram confimados
@@ -387,14 +387,11 @@ router.get('/', async (req, res) => {
     if (q) { conditions.push(`(a.titulo ILIKE $${paramIndex} OR a.descricao ILIKE $${paramIndex})`); values.push(`%${q}%`); paramIndex++; }
     if (tipo) { conditions.push(`a.tipo = $${paramIndex}`); values.push(tipo.toUpperCase()); paramIndex++; }
     if (area) {
-        // Verifica se 'area' é um array (ex: ?area=1&area=2) ou um valor único
         if (Array.isArray(area)) {
-            // Cria placeholders para cada item no array: ($2, $3, $4)
             const areaPlaceholders = area.map(() => `$${paramIndex++}`);
             conditions.push(`a.fk_Area_id_area IN (${areaPlaceholders.join(', ')})`);
             values.push(...area);
         } else {
-            // Se for apenas um valor, usa a lógica antiga
             conditions.push(`a.fk_Area_id_area = $${paramIndex++}`);
             values.push(area);
         }
@@ -430,10 +427,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
     const files = req.files;
     const { titulo, descricao, ...outrosDados } = dadosFormulario;
 
-    // --- ETAPA 1: MODERAÇÃO DE CONTEÚDO (CONDICIONAL) ---
-    
-    // <<< A LÓGICA DA FEATURE FLAG ESTÁ AQUI
-    // Verifica se a variável de ambiente é 'true'.
     if (process.env.ENABLE_MODERATION === 'true') {
         try {
             console.log("Moderação de conteúdo HABILITADA.");
@@ -462,7 +455,6 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         console.log("Moderação de conteúdo DESABILITADA.");
     }
 
-    // --- ETAPA 2: SALVAR NO BANCO (executa independentemente da moderação) ---
     const client = await db.pool.connect();
     try {
         await client.query('BEGIN');
@@ -483,7 +475,7 @@ router.post('/', auth, upload.array('images', 5), async (req, res) => {
         }
 
         await client.query('COMMIT');
-        res.status(201).json({ msg: 'Anúncio publicado com sucesso!' }); // Mensagem genérica
+        res.status(201).json({ msg: 'Anúncio publicado com sucesso!' });
 
     } catch (dbError) {
         if (files) files.forEach(file => fs.unlinkSync(file.path));

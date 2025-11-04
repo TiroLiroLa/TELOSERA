@@ -44,7 +44,7 @@ const Dashboard = () => {
             });
         }
         return () => {
-            if (isAvaliacaoModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+            if (isAvaliacaoModalOpen) revertHelpContent();
         };
     }, [isAvaliacaoModalOpen, setHelpContent, revertHelpContent]);
 

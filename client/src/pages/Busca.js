@@ -62,7 +62,7 @@ const Busca = () => {
             });
         }
         return () => {
-            if (isMapModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+            if (isMapModalOpen) revertHelpContent();
         };
     }, [isMapModalOpen, setHelpContent, revertHelpContent]);
 
@@ -111,7 +111,6 @@ const Busca = () => {
     }, [fetchResultados]);
 
     const updateFiltros = (novosFiltros) => {
-        // Limpa chaves vazias antes de atualizar a URL
         const filtrosAtivos = {};
         for (const key in novosFiltros) {
             if (novosFiltros[key]) {

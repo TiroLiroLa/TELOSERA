@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import './PasswordStrengthMeter.css'; // Vamos criar este CSS
+import './PasswordStrengthMeter.css';
 
 const PasswordStrengthMeter = ({ password }) => {
     const [validation, setValidation] = useState({

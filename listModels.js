@@ -1,4 +1,4 @@
-// Importa as bibliotecas necessárias
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config({ path: './server/.env' });
 
@@ -14,17 +14,7 @@ const genAI = new GoogleGenerativeAI(apiKey);
 async function run() {
     console.log("Buscando modelos disponíveis...");
     try {
-        // <<< A CORREÇÃO ESTÁ AQUI
-        // Pegamos um modelo base para acessar a funcionalidade de listagem.
         const generativeModel = genAI.getGenerativeModel({ model: "gemini-1.0-pro" }); 
-        
-        // A função agora é _listModels() (privada, mas funcional) ou através de outra via.
-        // A documentação oficial pode ter mudado. Vamos tentar a abordagem mais provável.
-        // Em versões mais recentes, a forma correta é através de uma chamada direta à API.
-        
-        // A biblioteca não expõe mais um 'listModels' publicamente de forma simples.
-        // A maneira mais garantida é fazer uma chamada HTTP direta para o endpoint da API.
-        // Vamos construir essa chamada.
         
         const fetch = (await import('node-fetch')).default;
 
@@ -46,7 +36,7 @@ async function run() {
         for (const m of models) {
             console.log(`\nModelo: ${m.name}`);
             console.log(`  Display Name: ${m.displayName}`);
-            console.log(`  Descrição: ${m.description.substring(0, 80)}...`); // Mostra parte da descrição
+            console.log(`  Descrição: ${m.description.substring(0, 80)}...`);
             console.log(`  Métodos Suportados: ${m.supportedGenerationMethods.join(', ')}`);
         }
         console.log("\n------------------------------------------");
@@ -56,5 +46,4 @@ async function run() {
     }
 }
 
-// Executa a função
 run();

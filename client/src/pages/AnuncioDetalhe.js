@@ -52,7 +52,7 @@ const AnuncioDetalhe = () => {
             });
         }
         return () => {
-            if (isMapModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+            if (isMapModalOpen) revertHelpContent();
         };
     }, [isMapModalOpen, setHelpContent, revertHelpContent]);
 

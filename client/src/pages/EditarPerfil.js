@@ -6,7 +6,7 @@ import LocationPicker from '../components/LocationPicker';
 import CityAutocomplete from '../components/CityAutocomplete';
 import { Link, useNavigate } from 'react-router-dom';
 import './EditarPerfil.css';
-import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import RequiredNotice from '../components/RequiredNotice';
 import { useHelp } from '../context/HelpContext';
 import helpIcon from '../assets/help-circle.svg';
 
@@ -51,7 +51,7 @@ const EditarPerfil = () => {
             });
         }
         return () => {
-            if (isModalOpen) revertHelpContent(); // This line was causing an error if revertHelpContent was not imported
+            if (isModalOpen) revertHelpContent();
         };
     }, [isModalOpen, setHelpContent, revertHelpContent]);
 
@@ -68,7 +68,7 @@ const EditarPerfil = () => {
                     api.get('/api/dados/areas'),
                     api.get('/api/users/me/areas'),
                     api.get('/api/dados/estados'),
-                    api.get('/api/users/me/regiao').catch(err => null) // Não quebra se o usuário não tiver região
+                    api.get('/api/users/me/regiao').catch(err => null)
                 ]);
                 setTodasAreas(resTodasAreas.data);
                 setMinhasAreas(new Set(resMinhasAreas.data.map(area => area.id_area)));

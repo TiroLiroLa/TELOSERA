@@ -1,6 +1,6 @@
 import React from 'react';
 import { useHelp } from '../context/HelpContext';
-import helpIcon from '../assets/help-circle.svg'; // Ícone de ajuda
+import helpIcon from '../assets/help-circle.svg';
 import './HelpTrigger.css';
 
 const HelpTrigger = () => {

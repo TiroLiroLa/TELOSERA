@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import Modal from './Modal';
-import RequiredNotice from './RequiredNotice'; // <--- adicionado
+import RequiredNotice from './RequiredNotice';
 import { useHelp } from '../context/HelpContext';
 import helpIcon from '../assets/help-circle.svg';
 

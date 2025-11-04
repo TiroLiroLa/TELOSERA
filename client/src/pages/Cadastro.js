@@ -9,7 +9,7 @@ import CityAutocomplete from '../components/CityAutocomplete';
 import { Tabs, Tab } from '../components/Tabs';
 import PasswordInput from '../components/PasswordInput';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
-import RequiredNotice from '../components/RequiredNotice'; // <--- adicionado
+import RequiredNotice from '../components/RequiredNotice';
 import { useHelp } from '../context/HelpContext';
 import helpIcon from '../assets/help-circle.svg';
 
@@ -44,10 +44,8 @@ const Cadastro = () => {
     const [addressFieldsDisabled, setAddressFieldsDisabled] = useState(false);
     const [todasEspecialidades, setTodasEspecialidades] = useState([]);
     const [minhasEspecialidades, setMinhasEspecialidades] = useState(new Set());
-    const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false); // <--- nova linha
+    const [isEspecialidadesModalOpen, setIsEspecialidadesModalOpen] = useState(false);
     const { setHelpContent, revertHelpContent, openHelp } = useHelp();
-
-    // Variáveis para controlar a altura máxima do conteúdo dos modais (mantido)
     const especialidadesModalMaxHeight = '50vh';
     const enderecoModalMaxHeight = '60vh';
 
@@ -77,7 +75,6 @@ const Cadastro = () => {
                 ]
             });
         }
-        // Cleanup: reverte para a ajuda da página quando o modal fecha
         return () => {
             if (isModalOpen) revertHelpContent();
         };
@@ -94,7 +91,6 @@ const Cadastro = () => {
                 ]
             });
         }
-        // Cleanup: reverte para a ajuda da página quando o modal fecha
         return () => {
             if (isEspecialidadesModalOpen) revertHelpContent();
         };
@@ -123,9 +119,9 @@ const Cadastro = () => {
                 const estado = estados.find(e => e.id_estado === parseInt(regiaoEstadoId));
                 if (estado) {
                     try {
-                        // A lógica de geocoding agora é feita diretamente aqui
+                        
                         const query = `city=${encodeURIComponent(regiaoCity.nome)}&state=${encodeURIComponent(estado.uf)}&country=Brazil`;
-                        // Usamos o api diretamente, não mais o hook
+                        
                         const res = await api.get(`https://nominatim.openstreetmap.org/search?${query}&format=json&limit=1`, {
                             headers: { 'User-Agent': 'TeloseraApp/1.0 (seu.email@exemplo.com)' }
                         });
@@ -141,7 +137,7 @@ const Cadastro = () => {
             }
         };
         syncMapToCity();
-    }, [regiaoCity, regiaoEstadoId, estados]); // Adiciona 'estados' à dependência
+    }, [regiaoCity, regiaoEstadoId, estados]);
 
     const onChange = e => {
         const { name, value } = e.target;
@@ -181,7 +177,6 @@ const Cadastro = () => {
                 throw new Error('Dados de Cidade/Estado não retornados pelo CEP.');
             }
 
-            // Agora, busca os IDs da nossa própria API com os dados retornados
             const ourApiResponse = await api.get(`/api/dados/localizacao-por-nome?uf=${uf}&cidade=${localidade}`);
             const { id_estado, id_cidade, nome_cidade } = ourApiResponse.data;
 
@@ -196,26 +191,23 @@ const Cadastro = () => {
         } catch (error) {
             console.error("Erro ao buscar CEP:", error);
             setCepError('CEP inválido ou não encontrado. Por favor, preencha manualmente.');
-            handleClearAddress(false); // Chama a função para limpar, mas sem limpar o CEP
+            handleClearAddress(false);
         } finally {
             setIsCepLoading(false);
         }
     };
 
-    // <<< 3. NOVA FUNÇÃO PARA LIBERAR OS CAMPOS
     const handleClearAddress = (clearCep = true) => {
         setFormData(prev => ({
             ...prev,
             rua: '',
             numero: '',
             complemento: '',
-            // Só limpa o CEP se for chamado pelo botão do usuário
             cep: clearCep ? '' : prev.cep
         }));
         setEnderecoEstadoId('');
         setEnderecoCity(null);
         setAddressFieldsDisabled(false);
-        // Limpa o erro do CEP ao limpar o endereço
         if (cepError) setCepError('');
     };
 
