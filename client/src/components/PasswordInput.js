@@ -22,7 +22,7 @@ const PasswordInput = ({ value, onChange, name, id, placeholder, required = fals
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword(!showPassword)}
-                tabIndex="-1" // Evita que o Tab pare neste botão ao navegar no formulário
+                tabIndex="-1"
                 title={showPassword ? "Ocultar senha" : "Mostrar senha"}
             >
                 {showPassword ? <EyeIcon /> : <EyeOffIcon />}

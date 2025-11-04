@@ -5,8 +5,8 @@ const cors = require('cors');
 const app = express();
 
 const whitelist = [
-  'http://localhost:3000', // Para você continuar testando no seu PC
-  'https://telosera-client.onrender.com' // A URL do seu client no Render
+  'http://localhost:3000',
+  'https://telosera-client.onrender.com'
 ];
 
 const corsOptions = {

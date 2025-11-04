@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
-import { AuthProvider, AuthContext } from './context/AuthContext'; // Ajuste na importação se necessário
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import Cadastro from './pages/Cadastro';
 import Login from './pages/Login';
 import './App.css';
@@ -23,7 +23,6 @@ import { HelpProvider, useHelp } from './context/HelpContext';
 import HelpModal from './components/HelpModal';
 
 const AppContent = () => {
-    // O useHelp só pode ser chamado dentro de um componente que é filho do Provider
     const { setHelpContent } = useHelp(); 
     const { isAuthenticated, loading } = useContext(AuthContext);
 

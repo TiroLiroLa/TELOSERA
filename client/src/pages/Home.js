@@ -31,7 +31,6 @@ const Home = () => {
       setLoading(true);
       const params = new URLSearchParams();
 
-      // --- LÓGICA DE PERSONALIZAÇÃO ---
       if (isAuthenticated) {
         try {
           // Busca em paralelo a região e as especialidades do usuário
@@ -53,10 +52,8 @@ const Home = () => {
           // 2. Adiciona filtro de especialidades
           if (resAreas && resAreas.data && resAreas.data.length > 0) {
             const areaIds = resAreas.data.map(area => area.id_area);
-            // Adiciona cada ID de área como um parâmetro separado
             areaIds.forEach(id => params.append('area', id));
 
-            // Atualiza os títulos para refletir a personalização, se não houver filtro de distância
             if (!params.has('sortBy')) {
               setTituloOfertas("Vagas em suas áreas de interesse");
               setTituloProfissionais("Profissionais em suas áreas de interesse");
@@ -69,7 +66,6 @@ const Home = () => {
       }
 
       try {
-        // Busca os 8 anúncios mais relevantes (4 de cada tipo, idealmente)
         params.append('limit', '8');
         const resAnuncios = await api.get(`/api/anuncios?${params.toString()}`);
         setAnuncios(resAnuncios.data);

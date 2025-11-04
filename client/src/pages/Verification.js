@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 
 const Verification = () => {
-    const { token } = useParams(); // Pega o token da URL
+    const { token } = useParams();
     const navigate = useNavigate();
 
     useEffect(() => {
