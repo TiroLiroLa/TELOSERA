@@ -355,11 +355,13 @@ router.post('/register', async (req, res) => {
             idEndereco = enderecoResult.rows[0].id_ender;
         }
 
+        const isVerified = process.env.ENABLE_EMAIL_VERIFICATION === 'false';
+
         const newUserResult = await client.query(
-            `INSERT INTO Usuario (nome, email, senha, tipo_usuario, identificador, telefone, ativo, fk_id_ender) 
-             VALUES ($1, $2, $3, $4, $5, $6, true, $7) 
+            `INSERT INTO Usuario (nome, email, senha, tipo_usuario, identificador, telefone, ativo, fk_id_ender, verificado) 
+             VALUES ($1, $2, $3, $4, $5, $6, true, $7, $8) 
              RETURNING id_usuario, nome, email`,
-            [nome, email, senha, tipo_usuario, identificador, telefone, idEndereco]
+            [nome, email, senha, tipo_usuario, identificador, telefone, idEndereco, isVerified] // <<< Adicionado 'isVerified'
         );
         const newUser = newUserResult.rows[0];
 
@@ -391,11 +393,19 @@ router.post('/register', async (req, res) => {
             { expiresIn: '1h' }
         );
         
-        // Envia o e-mail
-        await sendVerificationEmail(newUser.email, verificationToken);
-
-        await client.query('COMMIT');
-        res.status(201).json({ msg: 'Cadastro realizado! Por favor, verifique seu e-mail para ativar sua conta.' });
+        if (process.env.ENABLE_EMAIL_VERIFICATION === 'true') {
+            console.log("Verificação de e-mail HABILITADA.");
+            const verificationToken = jwt.sign({ userId: newUser.id_usuario }, process.env.JWT_SECRET, { expiresIn: '1h' });
+            await sendVerificationEmail(newUser.email, verificationToken);
+            
+            await client.query('COMMIT');
+            res.status(201).json({ msg: 'Cadastro realizado! Por favor, verifique seu e-mail para ativar sua conta.' });
+        } else {
+            // Se estiver desabilitado, o usuário já foi criado como 'verificado = true'
+            console.log("Verificação de e-mail DESABILITADA. Conta criada como verificada.");
+            await client.query('COMMIT');
+            res.status(201).json({ msg: 'Cadastro realizado com sucesso! Sua conta já está ativa.' });
+        }
 
     } catch (err) {
         await client.query('ROLLBACK');
@@ -424,7 +434,7 @@ router.post('/login', async (req, res) => {
 
         const user = userResult.rows[0];
 
-        if (!user.verificado) {
+        if (process.env.ENABLE_EMAIL_VERIFICATION === 'true' && !user.verificado) {
             return res.status(401).json({ msg: 'Sua conta ainda não foi verificada. Por favor, cheque seu e-mail.' });
         }
 
