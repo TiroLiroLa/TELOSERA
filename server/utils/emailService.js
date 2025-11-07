@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = async (email, token) => {
-    const verificationUrl = `http://localhost:3000/verify/${token}`; // Ajuste a URL conforme necessário
+    const verificationUrl = `https://telosera-client.onrender.com/verify/${token}`; // Ajuste a URL conforme necessário
 
     const mailOptions = {
         from: `"Telosera" <${process.env.EMAIL_USER}>`,
